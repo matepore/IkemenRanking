@@ -1,0 +1,105 @@
+package ikemen
+
+import (
+	"bufio"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+var ErrCharactersSectionNotFound = errors.New("no se encontró la sección [Characters] en data/select.def")
+
+// LoadCharacters reads the character identifiers from an Ikemen GO installation.
+func LoadCharacters(installationDir string) ([]string, error) {
+	selectDefPath := filepath.Join(installationDir, "data", "select.def")
+
+	info, err := os.Stat(selectDefPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("no se encontró %s: %w", selectDefPath, err)
+		}
+		return nil, fmt.Errorf("no se pudo acceder a %s: %w", selectDefPath, err)
+	}
+	if !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("%s no es un archivo regular", selectDefPath)
+	}
+
+	file, err := os.Open(selectDefPath)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo abrir %s: %w", selectDefPath, err)
+	}
+	defer file.Close()
+
+	characters, err := ParseSelectDef(file)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo interpretar %s: %w", selectDefPath, err)
+	}
+	return characters, nil
+}
+
+// ParseSelectDef extracts character identifiers from the [Characters] section.
+// It preserves the identifier as written in the file and ignores comments,
+// blank lines, random-select entries, and case-insensitive duplicates.
+func ParseSelectDef(source io.Reader) ([]string, error) {
+	scanner := bufio.NewScanner(source)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+
+	inCharacters := false
+	foundCharacters := false
+	seen := make(map[string]struct{})
+	characters := make([]string, 0)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(strings.TrimPrefix(scanner.Text(), "\uFEFF"))
+		if line == "" {
+			continue
+		}
+
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			section := strings.TrimSpace(line[1 : len(line)-1])
+			if inCharacters {
+				break
+			}
+			if strings.EqualFold(section, "Characters") {
+				inCharacters = true
+				foundCharacters = true
+			}
+			continue
+		}
+
+		if !inCharacters {
+			continue
+		}
+
+		if comment := strings.IndexByte(line, ';'); comment >= 0 {
+			line = strings.TrimSpace(line[:comment])
+		}
+		if line == "" {
+			continue
+		}
+
+		// In select.def, the first comma-separated field is the character ID.
+		id := strings.TrimSpace(strings.SplitN(line, ",", 2)[0])
+		if id == "" || strings.EqualFold(id, "randomselect") {
+			continue
+		}
+
+		key := strings.ToLower(id)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		characters = append(characters, id)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error al leer select.def: %w", err)
+	}
+	if !foundCharacters {
+		return nil, ErrCharactersSectionNotFound
+	}
+	return characters, nil
+}

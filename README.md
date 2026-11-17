@@ -5,9 +5,10 @@ character rankings from their results.
 
 ## Project status
 
-The repository currently contains the initial Go/Fyne desktop application
-skeleton. Tournament execution, character-list parsing, result processing, and
-CSV export are planned next.
+The application currently provides a Fyne desktop window that lets the user
+select an Ikemen GO installation and read the character identifiers from
+`data/select.def`. Tournament execution, result processing, and CSV export
+are planned next.
 
 ## Development prerequisites
 
@@ -37,5 +38,5 @@ go build -o bin/ikemen-ranking ./cmd/ikemen-ranking
 
 ## Documentation
 
-See [docs/architecture.md](docs/architecture.md) for the planned package
-boundaries and integration approach.
+See [docs/architecture.md](docs/architecture.md) for the package boundaries
+and integration approach.
