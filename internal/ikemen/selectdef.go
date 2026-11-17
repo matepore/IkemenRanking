@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var ErrCharactersSectionNotFound = errors.New("no se encontró la sección [Characters] en data/select.def")
+var ErrCharactersSectionNotFound = errors.New("the [Characters] section was not found in data/select.def")
 
 // LoadCharacters reads the character identifiers from an Ikemen GO installation.
 func LoadCharacters(installationDir string) ([]string, error) {
@@ -19,23 +19,23 @@ func LoadCharacters(installationDir string) ([]string, error) {
 	info, err := os.Stat(selectDefPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("no se encontró %s: %w", selectDefPath, err)
+			return nil, fmt.Errorf("could not find %s: %w", selectDefPath, err)
 		}
-		return nil, fmt.Errorf("no se pudo acceder a %s: %w", selectDefPath, err)
+		return nil, fmt.Errorf("could not access %s: %w", selectDefPath, err)
 	}
 	if !info.Mode().IsRegular() {
-		return nil, fmt.Errorf("%s no es un archivo regular", selectDefPath)
+		return nil, fmt.Errorf("%s is not a regular file", selectDefPath)
 	}
 
 	file, err := os.Open(selectDefPath)
 	if err != nil {
-		return nil, fmt.Errorf("no se pudo abrir %s: %w", selectDefPath, err)
+		return nil, fmt.Errorf("could not open %s: %w", selectDefPath, err)
 	}
 	defer file.Close()
 
 	characters, err := ParseSelectDef(file)
 	if err != nil {
-		return nil, fmt.Errorf("no se pudo interpretar %s: %w", selectDefPath, err)
+		return nil, fmt.Errorf("could not parse %s: %w", selectDefPath, err)
 	}
 	return characters, nil
 }
@@ -96,7 +96,7 @@ func ParseSelectDef(source io.Reader) ([]string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error al leer select.def: %w", err)
+		return nil, fmt.Errorf("error reading select.def: %w", err)
 	}
 	if !foundCharacters {
 		return nil, ErrCharactersSectionNotFound

@@ -43,6 +43,9 @@ future tournament:
 - The selected-character count is displayed and remains synchronized with the
   checkboxes.
 - Loading another installation clears the previous participant selection.
+- Each virtualized list row uses a separate checkbox and label. The label is
+  updated with the widget API so recycled rows display the correct character
+  name while scrolling.
 
 The selection is presentation state for now; tournament generation will
 consume the selected identifiers in a later implementation step.
@@ -72,6 +75,7 @@ an unknown/failed match rather than being interpreted as a win or draw.
 
 ## User interface
 
-The UI is a presentation layer. Long-running tournament work must run outside
-the UI event loop, report progress back to the UI, and support cancellation.
-Domain packages must not import Fyne.
+All application interface text is written in English. The UI is a presentation
+layer. Long-running tournament work must run outside the UI event loop, report
+progress back to the UI, and support cancellation. Domain packages must not
+import Fyne.
