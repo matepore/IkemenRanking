@@ -6,9 +6,11 @@ character rankings from their results.
 ## Project status
 
 The application currently provides a Fyne desktop window that lets the user
-select an Ikemen GO installation and read the character identifiers from
-`data/select.def`. Tournament execution, result processing, and CSV export
-are planned next.
+select an Ikemen GO installation, read the character identifiers from
+`data/select.def`, and choose which characters will participate in a future
+tournament. The participant selection starts empty and can be changed
+individually or with the select-all / deselect-all controls. Tournament
+execution, result processing, and CSV export are planned next.
 
 ## Development prerequisites
 

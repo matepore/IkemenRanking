@@ -26,14 +26,36 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	)
 	installationPath := widget.NewLabel("Instalación: ninguna carpeta seleccionada.")
 	characterCount := widget.NewLabel("Personajes encontrados: 0")
+	selectedCount := widget.NewLabel("Personajes seleccionados: 0")
 	status := widget.NewLabel("Seleccioná la carpeta raíz de tu instalación de Ikemen GO.")
+
 	characters := make([]string, 0)
+	selected := make(map[string]bool)
+
+	updateSelectedCount := func() {
+		selectedCount.SetText(fmt.Sprintf("Personajes seleccionados: %d", len(selected)))
+	}
 
 	characterList := widget.NewList(
 		func() int { return len(characters) },
-		func() fyne.CanvasObject { return widget.NewLabel("") },
+		func() fyne.CanvasObject {
+			return container.NewHBox(widget.NewCheck("", nil))
+		},
 		func(item widget.ListItemID, object fyne.CanvasObject) {
-			object.(*widget.Label).SetText(characters[item])
+			row := object.(*fyne.Container)
+			check := row.Objects[0].(*widget.Check)
+			character := characters[item]
+
+			check.Text = character
+			check.OnChanged = func(checked bool) {
+				if checked {
+					selected[character] = true
+				} else {
+					delete(selected, character)
+				}
+				updateSelectedCount()
+			}
+			check.SetChecked(selected[character])
 		},
 	)
 
@@ -46,15 +68,32 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		}
 
 		characters = loaded
+		selected = make(map[string]bool)
 		installationPath.SetText(fmt.Sprintf("Instalación: %s", path))
 		characterCount.SetText(fmt.Sprintf("Personajes encontrados: %d", len(characters)))
+		updateSelectedCount()
+
 		if len(characters) == 0 {
 			status.SetText("Se leyó data/select.def, pero no hay personajes en [Characters].")
 		} else {
-			status.SetText("Lista de personajes cargada correctamente.")
+			status.SetText("Lista de personajes cargada. Seleccioná los participantes del torneo.")
 		}
 		characterList.Refresh()
 	}
+
+	selectAll := widget.NewButton("Seleccionar todos", func() {
+		for _, character := range characters {
+			selected[character] = true
+		}
+		updateSelectedCount()
+		characterList.Refresh()
+	})
+
+	deselectAll := widget.NewButton("Deseleccionar todos", func() {
+		selected = make(map[string]bool)
+		updateSelectedCount()
+		characterList.Refresh()
+	})
 
 	selectFolder := widget.NewButton("Seleccionar carpeta de Ikemen GO", func() {
 		folderDialog := dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
@@ -70,6 +109,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		folderDialog.Show()
 	})
 
+	selectionControls := container.NewHBox(selectAll, deselectAll, selectedCount)
 	header := container.NewVBox(
 		title,
 		widget.NewSeparator(),
@@ -79,8 +119,10 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		characterCount,
 		status,
 		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Identificadores de personajes", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewLabelWithStyle("Seleccioná los personajes que participarán", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		selectionControls,
 	)
+
 	window.SetContent(container.NewBorder(header, nil, nil, nil, characterList))
 
 	return window

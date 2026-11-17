@@ -32,6 +32,21 @@ Ikemen GO installation directory. The parser:
 The parser is independent of Fyne and has unit tests. The UI displays the
 identifiers exactly as they appear in the file. No Ikemen GO files are modified.
 
+## Participant selection
+
+The UI allows the user to choose the characters that will participate in a
+future tournament:
+
+- Every character starts unselected after an installation is loaded.
+- Each character can be selected or deselected independently.
+- Select-all and deselect-all controls update the full list.
+- The selected-character count is displayed and remains synchronized with the
+  checkboxes.
+- Loading another installation clears the previous participant selection.
+
+The selection is presentation state for now; tournament generation will
+consume the selected identifiers in a later implementation step.
+
 ## Initial tournament rules
 
 - Every selected character faces every other selected character.
