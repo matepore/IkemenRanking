@@ -402,6 +402,12 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			dialog.ShowInformation("Invalid rounds", "Rounds to win must be a whole number greater than 0.", window)
 			return
 		}
+		plannedMatches, err := tournament.GenerateMatches(participants, perMatchup)
+		if err != nil {
+			dialog.ShowError(err, window)
+			return
+		}
+		totalFightCount := len(plannedMatches)
 		if resultsDir == "" {
 			resultsDir = installationDir
 		}
@@ -426,8 +432,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		tournamentProgressLabel.SetText("Tournament progress: starting...")
 		rankingSummary.SetText("Tournament is running.")
 		status.SetText("Tournament started.")
-		totalMatchups := len(participants) * (len(participants)-1) / 2
-		totalFightCount := totalMatchups * perMatchup
 
 		go func() {
 			records, runErr := tournament.Run(ctx, config, ikemen.RunMatch, func(progress tournament.Progress) {
@@ -450,7 +454,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 				})
 			}
 			standings, rankingErr := ranking.Calculate(participants, outcomes)
-			stamp := time.Now().Format("20060102-150405")
+			stamp := time.Now().Format("20060102-150405.000")
 			matchCSV := filepath.Join(outputDirectory, "ikemen-ranking-matches-"+stamp+".csv")
 			standingCSV := filepath.Join(outputDirectory, "ikemen-ranking-standings-"+stamp+".csv")
 			exportErr := storage.ExportMatchResultsCSV(matchCSV, records)

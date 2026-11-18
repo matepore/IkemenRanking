@@ -3,7 +3,6 @@ package tournament
 import (
 	"fmt"
 	"strings"
-	"math"
 )
 
 // Match represents one individual fight between two tournament participants.
@@ -38,11 +37,12 @@ func GenerateMatches(participants []string, matchesPerPair int) ([]Match, error)
 	}
 
 	participantCount := len(participants)
-	if participantCount > 1 && participantCount > math.MaxInt/(participantCount-1) {
+	maxInt := int(^uint(0) >> 1)
+	if participantCount > 1 && participantCount > maxInt/(participantCount-1) {
 		return nil, fmt.Errorf("participant count is too large")
 	}
 	matchupCount := participantCount * (participantCount - 1) / 2
-	if matchupCount > math.MaxInt/matchesPerPair {
+	if matchupCount > maxInt/matchesPerPair {
 		return nil, fmt.Errorf("configured fight count is too large")
 	}
 	totalMatches := matchupCount * matchesPerPair
