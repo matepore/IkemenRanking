@@ -154,6 +154,7 @@ func ParseStages(source io.Reader) ([]string, error) {
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 	inStages := false
 	foundStages := false
+	seen := make(map[string]struct{})
 	stages := make([]string, 0)
 
 	for scanner.Scan() {
@@ -184,6 +185,11 @@ func ParseStages(source io.Reader) ([]string, error) {
 		if stage == "" {
 			continue
 		}
+		key := strings.ToLower(stage)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
 		stages = append(stages, stage)
 	}
 	if err := scanner.Err(); err != nil {
