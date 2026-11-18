@@ -53,10 +53,25 @@ option is `Random`, which selects one of the listed stages uniformly for each
 match.
 
 The process runs outside the Fyne event loop, keeping the interface
-responsive. A cancellation control terminates the launched process. The
+responsive. A cancellation control terminates the launched process. The same
+runner is reused by the tournament executor. The
 runner gives each invocation a unique temporary log filename. The log parser
 reads the `p1wins`, `p2wins`, and optional `draws` counters. Missing or
 malformed required counters are errors and are not interpreted as draws.
+
+## Tournament execution and result export
+
+The tournament runner executes each generated fight sequentially through the
+Ikemen GO match runner. It reports progress after each completed fight and
+returns completed records if a later fight fails or is cancelled. The UI
+exports those completed records and the standings calculated from them, so
+partial tournament results are retained. The user can choose the destination
+folder; by default, files are written to the selected Ikemen GO installation
+directory. Each run creates timestamped match-results and standings CSV files.
+
+The ranking is sorted by points (one point per win, zero for a loss or draw).
+Characters tied on points share the same competition position; their original
+participant order is retained as a stable display order.
 
 ## Initial tournament rules
 

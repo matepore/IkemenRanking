@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/matepore/IkemenRanking/internal/ikemen"
@@ -46,5 +45,4 @@ func TestExportStandingsCSV(t *testing.T) {
 	if len(rows) != 2 || rows[1][1] != "A" || rows[1][2] != "1" {
 		t.Fatalf("unexpected CSV rows: %#v", rows)
 	}
-	_ = reflect.DeepEqual
 }

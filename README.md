@@ -5,11 +5,12 @@ character rankings from their results.
 
 ## Project status
 
-The application currently provides a Fyne desktop window that lets the user
-select an Ikemen GO installation and its executable independently, read
-characters from `data/select.def`, choose participants, configure fights per
-matchup, and run an individual CPU-vs-CPU test match. Tournament automation,
-ranking calculation, and CSV export are the next development steps.
+The application provides a Fyne desktop window to select an Ikemen GO
+installation and executable, read characters and stages from `data/select.def`,
+choose participants, configure fights per matchup, run an individual test
+match, and execute a complete round-robin CPU-vs-CPU tournament. Tournament
+progress and standings are displayed in the UI, and individual fight results
+and the final (or partial) standings are exported as separate CSV files.
 
 ## Development prerequisites
 

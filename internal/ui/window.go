@@ -405,6 +405,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		if resultsDir == "" {
 			resultsDir = installationDir
 		}
+		outputDirectory := resultsDir
 
 		config := tournament.Config{
 			InstallationDir: installationDir,
@@ -450,8 +451,8 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			}
 			standings, rankingErr := ranking.Calculate(participants, outcomes)
 			stamp := time.Now().Format("20060102-150405")
-			matchCSV := filepath.Join(resultsDir, "ikemen-ranking-matches-"+stamp+".csv")
-			standingCSV := filepath.Join(resultsDir, "ikemen-ranking-standings-"+stamp+".csv")
+			matchCSV := filepath.Join(outputDirectory, "ikemen-ranking-matches-"+stamp+".csv")
+			standingCSV := filepath.Join(outputDirectory, "ikemen-ranking-standings-"+stamp+".csv")
 			exportErr := storage.ExportMatchResultsCSV(matchCSV, records)
 			if rankingErr == nil {
 				if err := storage.ExportStandingsCSV(standingCSV, standings); err != nil {
@@ -482,18 +483,18 @@ func NewMainWindow(application fyne.App) fyne.Window {
 					))
 				}
 				rankingSummary.SetText(summary.String())
-				tournamentProgress.SetValue(1)
+				tournamentProgress.SetValue(float64(len(records)) / float64(totalFightCount))
 				tournamentProgressLabel.SetText(fmt.Sprintf("Tournament progress: %d/%d fights completed.", len(records), totalFightCount))
 
 				if runErr != nil {
-					status.SetText(fmt.Sprintf("Tournament stopped after %d of %d fights. Completed results were exported.", len(records), totalFightCount))
+					status.SetText(fmt.Sprintf("Tournament stopped after %d of %d fights.", len(records), totalFightCount))
 				} else {
 					status.SetText(fmt.Sprintf("Tournament completed. %d fights were played.", len(records)))
 				}
 				if exportErr != nil {
 					dialog.ShowError(fmt.Errorf("tournament data could not be fully exported: %w", exportErr), window)
 				} else {
-					status.SetText(status.Text + fmt.Sprintf(" CSV files saved to %s.", resultsDir))
+					status.SetText(fmt.Sprintf("%s CSV files saved to %s.", status.Text, outputDirectory))
 				}
 				if runErr != nil {
 					dialog.ShowError(runErr, window)
