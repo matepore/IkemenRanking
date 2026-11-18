@@ -24,6 +24,7 @@ type MatchConfig struct {
 
 // MatchResult contains the result parsed from Ikemen GO's text log.
 type MatchResult struct {
+	Stage       string
 	Player1Wins int
 	Player2Wins int
 	Draws       int
@@ -130,6 +131,8 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 	if err != nil {
 		return MatchResult{}, fmt.Errorf("could not parse Ikemen GO match log: %w", err)
 	}
+
+	result.Stage = stage
 
 	switch {
 	case result.Player1Wins > result.Player2Wins:

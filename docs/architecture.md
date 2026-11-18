@@ -10,10 +10,10 @@ depend on the graphical interface.
 - `internal/ui`: Fyne windows, widgets, and presentation.
 - `internal/ikemen`: installation validation, `select.def` parsing, process
   execution, and match-log parsing.
-- `internal/tournament`: round-robin matchup generation and tournament
-  execution.
-- `internal/ranking`: points, wins, losses, draws, and standings.
-- `internal/storage`: CSV export and any future checkpoint data.
+- `internal/tournament`: round-robin matchup generation and sequential
+  tournament execution with progress reporting.
+- `internal/ranking`: points, wins, losses, draws, and standings with shared positions for tied point totals.
+- `internal/storage`: separate CSV exports for individual fight results and final standings.
 
 ## Character discovery
 
