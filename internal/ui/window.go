@@ -124,7 +124,10 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		if stagesErr == nil {
 			usedLabels := map[string]int{}
 			for _, stagePath := range stages {
-				label := strings.TrimPrefix(stagePath, "stages/")
+				label := stagePath
+				if len(label) >= len("stages/") {
+					label = label[len("stages/"):]
+				}
 				if strings.EqualFold(pathpkg.Ext(label), ".def") {
 					label = label[:len(label)-len(pathpkg.Ext(label))]
 				}
