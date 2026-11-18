@@ -17,48 +17,42 @@ depend on the graphical interface.
 
 ## Character discovery
 
-The first integration step reads `data/select.def` from a user-selected
-Ikemen GO installation directory. The parser:
-
-- Reads entries only from the `[Characters]` section.
-- Ignores blank lines and semicolon comments, including inline comments.
-- Uses the first comma-separated field as the character identifier and ignores
-  the remaining stage/order/options fields.
-- Skips `randomselect` entries and duplicate identifiers (case-insensitive),
-  while preserving the original spelling of the first occurrence.
-- Stops when the next section begins and reports an error if `[Characters]`
-  does not exist.
-
-The parser is independent of Fyne and has unit tests. The UI displays the
-identifiers exactly as they appear in the file. No Ikemen GO files are modified.
+The application reads `data/select.def` from a user-selected Ikemen GO
+installation directory. The parser reads entries only from the
+`[Characters]` section, ignores comments and blank lines, uses the first
+comma-separated field as the character identifier, skips random-select entries
+and case-insensitive duplicates, and stops at the next section. It reports an
+error if `[Characters]` does not exist. The parser is independent of Fyne and
+has unit tests. No Ikemen GO files are modified.
 
 ## Participant selection
 
-The UI allows the user to choose the characters that will participate in a
-future tournament:
-
-- Every character starts unselected after an installation is loaded.
-- Each character can be selected or deselected independently.
-- Select-all and deselect-all controls update the full list.
-- The selected-character count is displayed and remains synchronized with the
-  checkboxes.
-- Loading another installation clears the previous participant selection.
-- Each virtualized list row uses a separate checkbox and label. The label is
-  updated with the widget API so recycled rows display the correct character
-  name while scrolling.
+The UI allows independent character selection, select-all and deselect-all.
+Loading another installation clears the previous selection. The selected
+participant count is displayed. The virtualized list uses separate checkbox
+and label widgets so recycled rows show the correct character.
 
 ## Tournament configuration and matchup generation
 
-The user can configure the number of individual fights played by each pair of
-participants in the GUI. The default is one fight per pair. The interface
-updates the estimated total fight count as the participant selection or
-configured value changes.
+The user configures the number of individual fights played by each pair. The
+default is one fight per pair, and the interface updates the estimated total
+when the selection or configured value changes. The tournament package
+generates each unique unordered pair the configured number of times and
+validates participants and fight count.
 
-The tournament package generates every unique unordered pair and repeats that
-pair the configured number of times. It rejects fewer than two participants,
-non-positive fight counts, blank participant identifiers, and duplicate
-identifiers (case-insensitive). The generator is independent of Fyne and has
-unit tests.
+## Single-match execution
+
+The UI lets the user choose the Ikemen GO executable independently of its
+filename, so custom builds and renamed executables are supported. The
+installation directory remains the working directory, which is important for
+relative game resources. A user selects two participants, AI level, rounds to
+win, and optionally a stage before starting a test match.
+
+The process runs outside the Fyne event loop, keeping the interface
+responsive. A cancellation control terminates the launched process. The
+runner gives each invocation a unique temporary log filename. The log parser
+reads the `p1wins`, `p2wins`, and optional `draws` counters. Missing or
+malformed required counters are errors and are not interpreted as draws.
 
 ## Initial tournament rules
 
@@ -69,26 +63,7 @@ unit tests.
 - Match results are retained individually and exported along with the final
   standings as CSV.
 
-These rules will be implemented in the domain packages and tested separately
-from Fyne.
-
-## Ikemen GO process integration
-
-The first process integration step now supports one match at a time. It runs
-the selected executable with the installation directory as its working
-directory, requests AI level 8 for both players, uses the configured rounds
-to win, and launches in windowed mode. An optional stage can be supplied.
-Every invocation receives a unique temporary log filename because Ikemen GO
-overwrites the specified log on subsequent runs.
-
-The log parser reads the `p1wins`, `p2wins`, and optional `draws` counters
-from Ikemen GO's Lua-table style text output. Missing or malformed required
-counters are errors; they are never silently interpreted as a draw. The winner
-is determined by comparing the two win counters.
-
 ## User interface
 
 All application interface text is written in English. The UI is a presentation
-layer. Long-running tournament work must run outside the UI event loop, report
-progress back to the UI, and support cancellation. Domain packages must not
-import Fyne.
+layer. Tournament orchestration and domain packages must not import Fyne.

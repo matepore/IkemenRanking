@@ -6,11 +6,10 @@ character rankings from their results.
 ## Project status
 
 The application currently provides a Fyne desktop window that lets the user
-select an Ikemen GO installation, read the character identifiers from
-`data/select.def`, choose tournament participants, and configure how many
-fights each participant pair will play. The default is one fight per pair, and
-the interface displays the estimated total number of fights. Tournament
-execution, result processing, and CSV export are planned next.
+select an Ikemen GO installation and its executable independently, read
+characters from `data/select.def`, choose participants, configure fights per
+matchup, and run an individual CPU-vs-CPU test match. Tournament automation,
+ranking calculation, and CSV export are the next development steps.
 
 ## Development prerequisites
 
