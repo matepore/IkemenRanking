@@ -3,6 +3,7 @@ package ikemen
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -88,11 +89,12 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 	defer os.Remove(logPath)
 
 	stage := strings.TrimSpace(config.Stage)
-	if stage == "" {
-		stage, err = LoadFirstStage(workingDir)
-		if err != nil {
-			return MatchResult{}, fmt.Errorf("no stage was specified and the first stage could not be loaded from data/select.def: %w", err)
+	if stage == "" || strings.EqualFold(stage, RandomStage) {
+		stages, loadErr := LoadStages(workingDir)
+		if loadErr != nil {
+			return MatchResult{}, fmt.Errorf("could not choose a random stage from data/select.def: %w", loadErr)
 		}
+		stage = stages[rand.Intn(len(stages))]
 	}
 
 	args := []string{

@@ -50,8 +50,8 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	aiLevel.SetText("8")
 	roundsToWin := widget.NewEntry()
 	roundsToWin.SetText("2")
-	stage := widget.NewEntry()
-	stage.SetPlaceHolder("Blank = first stage in select.def")
+	stage := widget.NewSelect([]string{ikemen.RandomStage}, nil)
+	stage.SetSelected(ikemen.RandomStage)
 
 	updateTournamentSummary := func() {
 		count, err := strconv.Atoi(strings.TrimSpace(matchesPerMatchup.Text))
@@ -116,6 +116,13 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		executablePath = ""
 		executablePathLabel.SetText("Executable: no file selected.")
 		characters = loaded
+		stages, stagesErr := ikemen.LoadStages(path)
+		stageOptions := []string{ikemen.RandomStage}
+		if stagesErr == nil {
+			stageOptions = append(stageOptions, stages...)
+		}
+		stage.Options = stageOptions
+		stage.SetSelected(ikemen.RandomStage)
 		selected = make(map[string]bool)
 		installationPathLabel.SetText(fmt.Sprintf("Installation: %s", path))
 		characterCount.SetText(fmt.Sprintf("Characters found: %d", len(characters)))
@@ -123,8 +130,11 @@ func NewMainWindow(application fyne.App) fyne.Window {
 
 		if len(characters) == 0 {
 			status.SetText("data/select.def was read, but [Characters] contains no entries.")
+		} else if stagesErr != nil {
+			status.SetText("Characters loaded, but stages could not be read from [ExtraStages].")
+			dialog.ShowError(stagesErr, window)
 		} else {
-			status.SetText("Character list loaded. Select the participants for the tournament.")
+			status.SetText(fmt.Sprintf("Loaded %d characters and %d stages. Select the tournament participants.", len(characters), len(stages)))
 		}
 		characterList.Refresh()
 	}
@@ -237,7 +247,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			Player2:         participants[1],
 			AILevel:         ai,
 			RoundsToWin:     rounds,
-			Stage:           strings.TrimSpace(stage.Text),
+			Stage:           stage.Selected,
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -299,10 +309,11 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		widget.NewSeparator(),
 		widget.NewLabelWithStyle("Single match test", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		widget.NewLabel("The first two selected participants (in select.def order) will be used."),
+		widget.NewLabel("Choose Random to select a stage at random."),
 		container.NewGridWithColumns(3,
 			container.NewVBox(widget.NewLabel("AI level"), aiLevel),
 			container.NewVBox(widget.NewLabel("Rounds to win"), roundsToWin),
-			container.NewVBox(widget.NewLabel("Stage (optional)"), stage),
+			container.NewVBox(widget.NewLabel("Stage"), stage),
 		),
 		container.NewHBox(runMatchButton, cancelMatchButton),
 	)

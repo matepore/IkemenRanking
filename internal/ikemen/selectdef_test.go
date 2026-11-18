@@ -86,80 +86,76 @@ func TestLoadCharactersMissingFile(t *testing.T) {
 }
 
 
-func TestParseFirstStage(t *testing.T) {
+func TestParseStages(t *testing.T) {
 	tests := []struct {
 		name string
 		data string
-		want string
+		want []string
 	}{
 		{
-			name: "first stage entry",
-			data: "[Info]\nname = Test\n[Characters]\nKFM\n[ExtraStages]\nstages/Training.def\nstages/Other.def\n",
-			want: "stages/Training.def",
+			name: "all stage entries in order",
+			data: "[Info]\\nname = Test\\n[ExtraStages]\\nstages/Training.def\\nstages/Other.def\\n[Characters]\\nKFM\\n",
+			want: []string{"stages/Training.def", "stages/Other.def"},
 		},
 		{
-			name: "comments and blank lines",
-			data: "[ExtraStages]\n; comment\n\nstages/A.def ; first stage\nstages/B.def\n",
-			want: "stages/A.def",
-		},
-		{
-			name: "first comma-separated field",
-			data: "[ExtraStages]\nstages/A.def, displayname=Training\nstages/B.def\n",
-			want: "stages/A.def",
+			name: "comments blank lines and duplicate paths",
+			data: "[ExtraStages]\\n; comment\\n\\nstages/A.def ; first\\nstages/B.def, displayname=B\\nSTAGES/a.DEF\\n",
+			want: []string{"stages/A.def", "stages/B.def"},
 		},
 		{
 			name: "case-insensitive section",
-			data: "[extrastages]\ncustom.def\n",
-			want: "custom.def",
+			data: "[extrastages]\\ncustom.def\\n",
+			want: []string{"custom.def"},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := ParseFirstStage(strings.NewReader(test.data))
+			got, err := ParseStages(strings.NewReader(test.data))
 			if err != nil {
-				t.Fatalf("ParseFirstStage() error = %v", err)
+				t.Fatalf("ParseStages() error = %v", err)
 			}
-			if got != test.want {
-				t.Fatalf("ParseFirstStage() = %q, want %q", got, test.want)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Fatalf("ParseStages() = %#v, want %#v", got, test.want)
 			}
 		})
 	}
 }
 
-func TestParseFirstStageMissingOrEmptySection(t *testing.T) {
+func TestParseStagesMissingOrEmptySection(t *testing.T) {
 	tests := []struct {
 		name string
 		data string
 		want error
 	}{
-		{name: "missing section", data: "[Characters]\nKFM\n", want: ErrExtraStagesSectionNotFound},
-		{name: "empty section", data: "[ExtraStages]\n; no stages\n[Info]\n", want: ErrNoStagesFound},
+		{name: "missing section", data: "[Characters]\\nKFM\\n", want: ErrExtraStagesSectionNotFound},
+		{name: "empty section", data: "[ExtraStages]\\n; no stages\\n[Info]\\n", want: ErrNoStagesFound},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := ParseFirstStage(strings.NewReader(test.data))
+			_, err := ParseStages(strings.NewReader(test.data))
 			if !errors.Is(err, test.want) {
-				t.Fatalf("ParseFirstStage() error = %v, want %v", err, test.want)
+				t.Fatalf("ParseStages() error = %v, want %v", err, test.want)
 			}
 		})
 	}
 }
 
-func TestLoadFirstStage(t *testing.T) {
+func TestLoadStages(t *testing.T) {
 	root := t.TempDir()
 	dataDir := filepath.Join(root, "data")
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	content := "[Characters]\nKFM\n[ExtraStages]\nstages/First.def\nstages/Second.def\n"
+	content := "[Characters]\\nKFM\\n[ExtraStages]\\nstages/First.def\\nstages/Second.def\\n"
 	if err := os.WriteFile(filepath.Join(dataDir, "select.def"), []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	got, err := LoadFirstStage(root)
+	got, err := LoadStages(root)
 	if err != nil {
-		t.Fatalf("LoadFirstStage() error = %v", err)
+		t.Fatalf("LoadStages() error = %v", err)
 	}
-	if got != "stages/First.def" {
-		t.Fatalf("LoadFirstStage() = %q, want %q", got, "stages/First.def")
+	want := []string{"stages/First.def", "stages/Second.def"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("LoadStages() = %#v, want %#v", got, want)
 	}
 }

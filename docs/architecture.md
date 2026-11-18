@@ -22,8 +22,10 @@ installation directory. The parser reads entries only from the
 `[Characters]` section, ignores comments and blank lines, uses the first
 comma-separated field as the character identifier, skips random-select entries
 and case-insensitive duplicates, and stops at the next section. It reports an
-error if `[Characters]` does not exist. The parser is independent of Fyne and
-has unit tests. No Ikemen GO files are modified.
+error if `[Characters]` does not exist. The stage parser reads all entries in
+`[ExtraStages]`, preserving their order while ignoring comments, blank lines,
+and duplicate paths. The parser is independent of Fyne and has unit tests. No
+Ikemen GO files are modified.
 
 ## Participant selection
 
@@ -46,7 +48,9 @@ The UI lets the user choose the Ikemen GO executable independently of its
 filename, so custom builds and renamed executables are supported. The
 installation directory remains the working directory, which is important for
 relative game resources. A user selects two participants, AI level, rounds to
-win, and optionally a stage before starting a test match.
+win, and chooses a stage from a dropdown populated from `[ExtraStages]`. The first
+option is `Random`, which selects one of the listed stages uniformly for each
+match.
 
 The process runs outside the Fyne event loop, keeping the interface
 responsive. A cancellation control terminates the launched process. The
