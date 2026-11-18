@@ -74,14 +74,17 @@ from Fyne.
 
 ## Ikemen GO process integration
 
-The application will launch the user's existing Ikemen GO executable as an
-external process. The game installation and its files are not bundled with
-IkemenRanking, and the project will avoid requiring modifications to the game
-source code.
+The first process integration step now supports one match at a time. It runs
+the selected executable with the installation directory as its working
+directory, requests AI level 8 for both players, uses the configured rounds
+to win, and launches in windowed mode. An optional stage can be supplied.
+Every invocation receives a unique temporary log filename because Ikemen GO
+overwrites the specified log on subsequent runs.
 
-Each match should use its own log file so a later process run cannot overwrite
-an earlier result. Missing, malformed, or incomplete logs must be treated as
-an unknown/failed match rather than being interpreted as a win or draw.
+The log parser reads the `p1wins`, `p2wins`, and optional `draws` counters
+from Ikemen GO's Lua-table style text output. Missing or malformed required
+counters are errors; they are never silently interpreted as a draw. The winner
+is determined by comparing the two win counters.
 
 ## User interface
 
