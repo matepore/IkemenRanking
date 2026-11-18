@@ -2,10 +2,13 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"path/filepath"
 	pathpkg "path"
 	"strconv"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -13,6 +16,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/matepore/IkemenRanking/internal/ikemen"
+	"github.com/matepore/IkemenRanking/internal/ranking"
+	"github.com/matepore/IkemenRanking/internal/storage"
+	"github.com/matepore/IkemenRanking/internal/tournament"
 )
 
 // NewMainWindow builds the main application window.
@@ -34,11 +40,18 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	selectedCount := widget.NewLabel("Selected characters: 0")
 	totalFights := widget.NewLabel("Total fights: 0")
 	status := widget.NewLabel("Select the root folder of your Ikemen GO installation.")
+	resultsFolderLabel := widget.NewLabel("Results folder: select an installation first.")
+	tournamentProgressLabel := widget.NewLabel("Tournament progress: not started.")
+	rankingSummary := widget.NewLabel("Final ranking will appear here.")
+	tournamentProgress := widget.NewProgressBar()
 
 	var installationDir string
 	var executablePath string
 	var matchCancel context.CancelFunc
+	var tournamentCancel context.CancelFunc
+	var resultsDir string
 	matchRunning := false
+	tournamentRunning := false
 
 	characters := make([]string, 0)
 	selected := make(map[string]bool)
@@ -115,6 +128,8 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		}
 
 		installationDir = path
+		resultsDir = path
+		resultsFolderLabel.SetText(fmt.Sprintf("Results folder: %s", resultsDir))
 		executablePath = ""
 		executablePathLabel.SetText("Executable: no file selected.")
 		characters = loaded
@@ -186,6 +201,21 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		folderDialog.Show()
 	})
 
+	selectResultsFolder := widget.NewButton("Select results folder", func() {
+		folderDialog := dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
+			if err != nil {
+				dialog.ShowError(err, window)
+				return
+			}
+			if uri == nil {
+				return
+			}
+			resultsDir = uri.Path()
+			resultsFolderLabel.SetText(fmt.Sprintf("Results folder: %s", resultsDir))
+		}, window)
+		folderDialog.Show()
+	})
+
 	selectExecutable := widget.NewButton("Select executable", func() {
 		fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if err != nil {
@@ -224,7 +254,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	cancelMatchButton.Hide()
 
 	runMatchButton.OnTapped = func() {
-		if matchRunning {
+		if matchRunning || tournamentRunning {
 			return
 		}
 		if installationDir == "" {
@@ -312,7 +342,8 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		title,
 		widget.NewSeparator(),
 		description,
-		container.NewHBox(selectFolder, selectExecutable),
+		container.NewHBox(selectFolder, selectExecutable, selectResultsFolder),
+		resultsFolderLabel,
 		installationPathLabel,
 		executablePathLabel,
 		characterCount,
@@ -324,6 +355,153 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		widget.NewLabelWithStyle("Tournament settings", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		tournamentControls,
 	)
+	tournamentRunButton := widget.NewButton("Run tournament", nil)
+	cancelTournamentButton := widget.NewButton("Cancel tournament", func() {
+		if tournamentCancel != nil {
+			tournamentCancel()
+			status.SetText("Cancelling tournament after the current fight...")
+		}
+	})
+	cancelTournamentButton.Hide()
+
+	tournamentRunButton.OnTapped = func() {
+		if matchRunning || tournamentRunning {
+			return
+		}
+		if installationDir == "" {
+			dialog.ShowInformation("Installation required", "Select the root folder of your Ikemen GO installation first.", window)
+			return
+		}
+		if executablePath == "" {
+			dialog.ShowInformation("Executable required", "Select the Ikemen GO executable you want to run.", window)
+			return
+		}
+
+		participants := make([]string, 0, len(selected))
+		for _, character := range characters {
+			if selected[character] {
+				participants = append(participants, character)
+			}
+		}
+		if len(participants) < 2 {
+			dialog.ShowInformation("Participants required", "Select at least two participants for the tournament.", window)
+			return
+		}
+		perMatchup, err := strconv.Atoi(strings.TrimSpace(matchesPerMatchup.Text))
+		if err != nil || perMatchup < 1 {
+			dialog.ShowInformation("Invalid fight count", "Fights per matchup must be a whole number greater than 0.", window)
+			return
+		}
+		ai, err := strconv.Atoi(strings.TrimSpace(aiLevel.Text))
+		if err != nil || ai < 1 {
+			dialog.ShowInformation("Invalid AI level", "AI level must be a whole number greater than 0.", window)
+			return
+		}
+		rounds, err := strconv.Atoi(strings.TrimSpace(roundsToWin.Text))
+		if err != nil || rounds < 1 {
+			dialog.ShowInformation("Invalid rounds", "Rounds to win must be a whole number greater than 0.", window)
+			return
+		}
+		if resultsDir == "" {
+			resultsDir = installationDir
+		}
+
+		config := tournament.Config{
+			InstallationDir: installationDir,
+			ExecutablePath: executablePath,
+			Participants: participants,
+			MatchesPerPair: perMatchup,
+			AILevel: ai,
+			RoundsToWin: rounds,
+			Stage: stagePaths[stage.Selected],
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		tournamentCancel = cancel
+		tournamentRunning = true
+		tournamentRunButton.Disable()
+		runMatchButton.Disable()
+		cancelTournamentButton.Show()
+		tournamentProgress.SetValue(0)
+		tournamentProgressLabel.SetText("Tournament progress: starting...")
+		rankingSummary.SetText("Tournament is running.")
+		status.SetText("Tournament started.")
+		totalMatchups := len(participants) * (len(participants)-1) / 2
+		totalFightCount := totalMatchups * perMatchup
+
+		go func() {
+			records, runErr := tournament.Run(ctx, config, ikemen.RunMatch, func(progress tournament.Progress) {
+				fyne.Do(func() {
+					tournamentProgress.SetValue(float64(progress.Completed) / float64(progress.Total))
+					tournamentProgressLabel.SetText(fmt.Sprintf(
+						"Tournament progress: %d/%d — %s vs %s",
+						progress.Completed, progress.Total, progress.Match.Player1, progress.Match.Player2,
+					))
+				})
+			})
+
+			outcomes := make([]ranking.MatchOutcome, 0, len(records))
+			for _, record := range records {
+				outcomes = append(outcomes, ranking.MatchOutcome{
+					Player1: record.Match.Player1,
+					Player2: record.Match.Player2,
+					Winner: record.Result.Winner,
+					IsDraw: record.Result.IsDraw,
+				})
+			}
+			standings, rankingErr := ranking.Calculate(participants, outcomes)
+			stamp := time.Now().Format("20060102-150405")
+			matchCSV := filepath.Join(resultsDir, "ikemen-ranking-matches-"+stamp+".csv")
+			standingCSV := filepath.Join(resultsDir, "ikemen-ranking-standings-"+stamp+".csv")
+			exportErr := storage.ExportMatchResultsCSV(matchCSV, records)
+			if rankingErr == nil {
+				if err := storage.ExportStandingsCSV(standingCSV, standings); err != nil {
+					exportErr = errors.Join(exportErr, err)
+				}
+			}
+
+			fyne.Do(func() {
+				defer cancel()
+				tournamentCancel = nil
+				tournamentRunning = false
+				tournamentRunButton.Enable()
+				runMatchButton.Enable()
+				cancelTournamentButton.Hide()
+
+				if rankingErr != nil {
+					status.SetText("Tournament finished, but the ranking could not be calculated.")
+					dialog.ShowError(rankingErr, window)
+					return
+				}
+				var summary strings.Builder
+				summary.WriteString("Position  Character  Points  W-L-D\n")
+				for _, standing := range standings {
+					summary.WriteString(fmt.Sprintf(
+						"%d. %s  %d  %d-%d-%d\n",
+						standing.Position, standing.Character, standing.Points,
+						standing.Wins, standing.Losses, standing.Draws,
+					))
+				}
+				rankingSummary.SetText(summary.String())
+				tournamentProgress.SetValue(1)
+				tournamentProgressLabel.SetText(fmt.Sprintf("Tournament progress: %d/%d fights completed.", len(records), totalFightCount))
+
+				if runErr != nil {
+					status.SetText(fmt.Sprintf("Tournament stopped after %d of %d fights. Completed results were exported.", len(records), totalFightCount))
+				} else {
+					status.SetText(fmt.Sprintf("Tournament completed. %d fights were played.", len(records)))
+				}
+				if exportErr != nil {
+					dialog.ShowError(fmt.Errorf("tournament data could not be fully exported: %w", exportErr), window)
+				} else {
+					status.SetText(status.Text + fmt.Sprintf(" CSV files saved to %s.", resultsDir))
+				}
+				if runErr != nil {
+					dialog.ShowError(runErr, window)
+				}
+			})
+		}()
+	}
+
 	matchPanel := container.NewVBox(
 		widget.NewSeparator(),
 		widget.NewLabelWithStyle("Single match test", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
@@ -337,7 +515,15 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		container.NewHBox(runMatchButton, cancelMatchButton),
 	)
 
-	window.SetContent(container.NewBorder(header, matchPanel, nil, nil, characterList))
+	tournamentPanel := container.NewVBox(
+		widget.NewSeparator(),
+		widget.NewLabelWithStyle("Tournament execution", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		tournamentProgressLabel,
+		tournamentProgress,
+		container.NewHBox(tournamentRunButton, cancelTournamentButton),
+		rankingSummary,
+	)
+	window.SetContent(container.NewBorder(header, container.NewVBox(matchPanel, tournamentPanel), nil, nil, characterList))
 	return window
 }
 
