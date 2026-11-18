@@ -490,15 +490,17 @@ func NewMainWindow(application fyne.App) fyne.Window {
 				tournamentProgress.SetValue(float64(len(records)) / float64(totalFightCount))
 				tournamentProgressLabel.SetText(fmt.Sprintf("Tournament progress: %d/%d fights completed.", len(records), totalFightCount))
 
+				completionMessage := ""
 				if runErr != nil {
-					status.SetText(fmt.Sprintf("Tournament stopped after %d of %d fights.", len(records), totalFightCount))
+					completionMessage = fmt.Sprintf("Tournament stopped after %d of %d fights.", len(records), totalFightCount)
 				} else {
-					status.SetText(fmt.Sprintf("Tournament completed. %d fights were played.", len(records)))
+					completionMessage = fmt.Sprintf("Tournament completed. %d fights were played.", len(records))
 				}
 				if exportErr != nil {
+					status.SetText(completionMessage)
 					dialog.ShowError(fmt.Errorf("tournament data could not be fully exported: %w", exportErr), window)
 				} else {
-					status.SetText(fmt.Sprintf("%s CSV files saved to %s.", status.Text, outputDirectory))
+					status.SetText(fmt.Sprintf("%s CSV files saved to %s.", completionMessage, outputDirectory))
 				}
 				if runErr != nil {
 					dialog.ShowError(runErr, window)
@@ -509,7 +511,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 
 	matchPanel := container.NewVBox(
 		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Single match test", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewLabelWithStyle("Match settings and single-match test", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		widget.NewLabel("The first two selected participants (in select.def order) will be used."),
 		widget.NewLabel("Choose Random to select a stage at random."),
 		container.NewGridWithColumns(3,
