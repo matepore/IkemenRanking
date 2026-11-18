@@ -126,7 +126,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			for _, stagePath := range stages {
 				label := pathpkg.Base(stagePath)
 				if strings.EqualFold(pathpkg.Ext(label), ".def") {
-					label = label[:len(label)-len(path.Ext(label))]
+					label = label[:len(label)-len(pathpkg.Ext(label))]
 				}
 				baseLabel := label
 				usedLabels[strings.ToLower(baseLabel)]++
