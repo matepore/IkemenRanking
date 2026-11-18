@@ -94,22 +94,22 @@ func TestParseFirstStage(t *testing.T) {
 	}{
 		{
 			name: "first stage entry",
-			data: "[Info]\\nname = Test\\n[Characters]\\nKFM\\n[ExtraStages]\\nstages/Training.def\\nstages/Other.def\\n",
+			data: "[Info]\nname = Test\n[Characters]\nKFM\n[ExtraStages]\nstages/Training.def\nstages/Other.def\n",
 			want: "stages/Training.def",
 		},
 		{
 			name: "comments and blank lines",
-			data: "[ExtraStages]\\n; comment\\n\\nstages/A.def ; first stage\\nstages/B.def\\n",
+			data: "[ExtraStages]\n; comment\n\nstages/A.def ; first stage\nstages/B.def\n",
 			want: "stages/A.def",
 		},
 		{
 			name: "first comma-separated field",
-			data: "[ExtraStages]\\nstages/A.def, displayname=Training\\nstages/B.def\\n",
+			data: "[ExtraStages]\nstages/A.def, displayname=Training\nstages/B.def\n",
 			want: "stages/A.def",
 		},
 		{
 			name: "case-insensitive section",
-			data: "[extrastages]\\ncustom.def\\n",
+			data: "[extrastages]\ncustom.def\n",
 			want: "custom.def",
 		},
 	}
@@ -132,8 +132,8 @@ func TestParseFirstStageMissingOrEmptySection(t *testing.T) {
 		data string
 		want error
 	}{
-		{name: "missing section", data: "[Characters]\\nKFM\\n", want: ErrExtraStagesSectionNotFound},
-		{name: "empty section", data: "[ExtraStages]\\n; no stages\\n[Info]\\n", want: ErrNoStagesFound},
+		{name: "missing section", data: "[Characters]\nKFM\n", want: ErrExtraStagesSectionNotFound},
+		{name: "empty section", data: "[ExtraStages]\n; no stages\n[Info]\n", want: ErrNoStagesFound},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -151,7 +151,7 @@ func TestLoadFirstStage(t *testing.T) {
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	content := "[Characters]\\nKFM\\n[ExtraStages]\\nstages/First.def\\nstages/Second.def\\n"
+	content := "[Characters]\nKFM\n[ExtraStages]\nstages/First.def\nstages/Second.def\n"
 	if err := os.WriteFile(filepath.Join(dataDir, "select.def"), []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}

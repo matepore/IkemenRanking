@@ -144,7 +144,7 @@ func ParseFirstStage(source io.Reader) (string, error) {
 	foundStages := false
 
 	for scanner.Scan() {
-		line := strings.TrimSpace(strings.TrimPrefix(scanner.Text(), "\\uFEFF"))
+		line := strings.TrimSpace(strings.TrimPrefix(scanner.Text(), "\uFEFF"))
 		if line == "" {
 			continue
 		}
