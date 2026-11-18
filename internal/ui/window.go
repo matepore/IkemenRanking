@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 
@@ -52,6 +53,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	roundsToWin.SetText("2")
 	stage := widget.NewSelect([]string{ikemen.RandomStage}, nil)
 	stage.SetSelected(ikemen.RandomStage)
+	stagePaths := map[string]string{ikemen.RandomStage: ikemen.RandomStage}
 
 	updateTournamentSummary := func() {
 		count, err := strconv.Atoi(strings.TrimSpace(matchesPerMatchup.Text))
@@ -118,8 +120,22 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		characters = loaded
 		stages, stagesErr := ikemen.LoadStages(path)
 		stageOptions := []string{ikemen.RandomStage}
+		stagePaths = map[string]string{ikemen.RandomStage: ikemen.RandomStage}
 		if stagesErr == nil {
-			stageOptions = append(stageOptions, stages...)
+			usedLabels := map[string]int{}
+			for _, stagePath := range stages {
+				label := path.Base(stagePath)
+				if strings.EqualFold(path.Ext(label), ".def") {
+					label = label[:len(label)-len(path.Ext(label))]
+				}
+				baseLabel := label
+				usedLabels[strings.ToLower(baseLabel)]++
+				if usedLabels[strings.ToLower(baseLabel)] > 1 {
+					label = fmt.Sprintf("%s (%d)", baseLabel, usedLabels[strings.ToLower(baseLabel)])
+				}
+				stageOptions = append(stageOptions, label)
+				stagePaths[label] = stagePath
+			}
 		}
 		stage.Options = stageOptions
 		stage.SetSelected(ikemen.RandomStage)
@@ -247,7 +263,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			Player2:         participants[1],
 			AILevel:         ai,
 			RoundsToWin:     rounds,
-			Stage:           stage.Selected,
+			Stage:           stagePaths[stage.Selected],
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
