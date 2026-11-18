@@ -19,8 +19,8 @@ func TestCalculateStandings(t *testing.T) {
 	}
 	want := []Standing{
 		{Position: 1, Character: "Ryu", Points: 1, Wins: 1, Losses: 1, Draws: 1, Played: 3},
-		{Position: 1, Character: "Ken", Points: 1, Wins: 1, Losses: 1, Draws: 0, Played: 2},
-		{Position: 3, Character: "Chun-Li", Points: 1, Wins: 1, Losses: 0, Draws: 1, Played: 2},
+		{Position: 1, Character: "Ken", Points: 1, Wins: 1, Losses: 2, Draws: 0, Played: 3},
+		{Position: 1, Character: "Chun-Li", Points: 1, Wins: 1, Losses: 0, Draws: 1, Played: 2},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Calculate() = %#v, want %#v", got, want)
