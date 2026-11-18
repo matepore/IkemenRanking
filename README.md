@@ -7,9 +7,9 @@ character rankings from their results.
 
 The application currently provides a Fyne desktop window that lets the user
 select an Ikemen GO installation, read the character identifiers from
-`data/select.def`, and choose which characters will participate in a future
-tournament. The participant selection starts empty and can be changed
-individually or with the select-all / deselect-all controls. Tournament
+`data/select.def`, choose tournament participants, and configure how many
+fights each participant pair will play. The default is one fight per pair, and
+the interface displays the estimated total number of fights. Tournament
 execution, result processing, and CSV export are planned next.
 
 ## Development prerequisites

@@ -47,12 +47,22 @@ future tournament:
   updated with the widget API so recycled rows display the correct character
   name while scrolling.
 
-The selection is presentation state for now; tournament generation will
-consume the selected identifiers in a later implementation step.
+## Tournament configuration and matchup generation
+
+The user can configure the number of individual fights played by each pair of
+participants in the GUI. The default is one fight per pair. The interface
+updates the estimated total fight count as the participant selection or
+configured value changes.
+
+The tournament package generates every unique unordered pair and repeats that
+pair the configured number of times. It rejects fewer than two participants,
+non-positive fight counts, blank participant identifiers, and duplicate
+identifiers (case-insensitive). The generator is independent of Fyne and has
+unit tests.
 
 ## Initial tournament rules
 
-- Every selected character faces every other selected character.
+- Every selected character faces every other character.
 - All matches are CPU versus CPU.
 - A win awards one point; a loss awards zero points.
 - Draws award no points.

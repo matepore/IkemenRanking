@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -27,13 +29,35 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	installationPath := widget.NewLabel("Installation: no folder selected.")
 	characterCount := widget.NewLabel("Characters found: 0")
 	selectedCount := widget.NewLabel("Selected characters: 0")
+	totalFights := widget.NewLabel("Total fights: 0")
 	status := widget.NewLabel("Select the root folder of your Ikemen GO installation.")
 
 	characters := make([]string, 0)
 	selected := make(map[string]bool)
 
+	matchesPerMatchup := widget.NewEntry()
+	matchesPerMatchup.SetText("1")
+	matchesPerMatchup.SetPlaceHolder("1")
+
+	updateTournamentSummary := func() {
+		count, err := strconv.Atoi(strings.TrimSpace(matchesPerMatchup.Text))
+		if err != nil || count < 1 {
+			totalFights.SetText("Total fights: Enter a whole number greater than 0.")
+			return
+		}
+
+		participantCount := len(selected)
+		matchupCount := participantCount * (participantCount - 1) / 2
+		totalFights.SetText(fmt.Sprintf("Total fights: %d", matchupCount*count))
+	}
+
 	updateSelectedCount := func() {
 		selectedCount.SetText(fmt.Sprintf("Selected characters: %d", len(selected)))
+		updateTournamentSummary()
+	}
+
+	matchesPerMatchup.OnChanged = func(string) {
+		updateTournamentSummary()
 	}
 
 	characterList := widget.NewList(
@@ -116,6 +140,11 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	})
 
 	selectionControls := container.NewHBox(selectAll, deselectAll, selectedCount)
+	tournamentControls := container.NewHBox(
+		widget.NewLabel("Fights per matchup:"),
+		matchesPerMatchup,
+		totalFights,
+	)
 	header := container.NewVBox(
 		title,
 		widget.NewSeparator(),
@@ -127,6 +156,9 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		widget.NewSeparator(),
 		widget.NewLabelWithStyle("Select the characters that will participate", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		selectionControls,
+		widget.NewSeparator(),
+		widget.NewLabelWithStyle("Tournament settings", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		tournamentControls,
 	)
 
 	window.SetContent(container.NewBorder(header, nil, nil, nil, characterList))
