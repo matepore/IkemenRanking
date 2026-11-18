@@ -87,6 +87,14 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 	}
 	defer os.Remove(logPath)
 
+	stage := strings.TrimSpace(config.Stage)
+	if stage == "" {
+		stage, err = LoadFirstStage(workingDir)
+		if err != nil {
+			return MatchResult{}, fmt.Errorf("no stage was specified and the first stage could not be loaded from data/select.def: %w", err)
+		}
+	}
+
 	args := []string{
 		config.Player1,
 		config.Player2,
@@ -96,9 +104,7 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 		"-windowed",
 		"-log", logName,
 	}
-	if strings.TrimSpace(config.Stage) != "" {
-		args = append(args, "-s", config.Stage)
-	}
+	args = append(args, "-s", stage)
 
 	command := exec.CommandContext(ctx, executable, args...)
 	command.Dir = workingDir

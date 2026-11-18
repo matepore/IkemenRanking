@@ -46,17 +46,12 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	matchesPerMatchup.SetText("1")
 	matchesPerMatchup.SetPlaceHolder("1")
 
-	player1Select := widget.NewSelect([]string{}, nil)
-	player1Select.PlaceHolder = "Select player 1"
-	player2Select := widget.NewSelect([]string{}, nil)
-	player2Select.PlaceHolder = "Select player 2"
-
 	aiLevel := widget.NewEntry()
 	aiLevel.SetText("8")
 	roundsToWin := widget.NewEntry()
 	roundsToWin.SetText("2")
 	stage := widget.NewEntry()
-	stage.SetPlaceHolder("Optional stage identifier or path")
+	stage.SetPlaceHolder("Blank = first stage in select.def")
 
 	updateTournamentSummary := func() {
 		count, err := strconv.Atoi(strings.TrimSpace(matchesPerMatchup.Text))
@@ -70,35 +65,10 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		totalFights.SetText(fmt.Sprintf("Total fights: %d", matchupCount*count))
 	}
 
-	updatePlayerOptions := func() {
-		options := make([]string, 0, len(selected))
-		for _, character := range characters {
-			if selected[character] {
-				options = append(options, character)
-			}
-		}
-
-		oldPlayer1, oldPlayer2 := player1Select.Selected, player2Select.Selected
-		player1Select.Options = options
-		player2Select.Options = options
-		if contains(options, oldPlayer1) {
-			player1Select.SetSelected(oldPlayer1)
-		} else {
-			player1Select.SetSelected("")
-		}
-		if contains(options, oldPlayer2) {
-			player2Select.SetSelected(oldPlayer2)
-		} else {
-			player2Select.SetSelected("")
-		}
-		player1Select.Refresh()
-		player2Select.Refresh()
-	}
 
 	updateSelectedCount := func() {
 		selectedCount.SetText(fmt.Sprintf("Selected characters: %d", len(selected)))
 		updateTournamentSummary()
-		updatePlayerOptions()
 	}
 
 	matchesPerMatchup.OnChanged = func(string) {
@@ -203,7 +173,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			}
 			executablePath = path
 			executablePathLabel.SetText(fmt.Sprintf("Executable: %s", path))
-			status.SetText("Executable selected. Choose two participants to run a test match.")
+			status.SetText("Executable selected. Select at least two participants to run a test match.")
 		}, window)
 		fileDialog.Show()
 	})
@@ -236,12 +206,17 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			dialog.ShowInformation("Executable required", "Select the Ikemen GO executable you want to run.", window)
 			return
 		}
-		if player1Select.Selected == "" || player2Select.Selected == "" {
-			dialog.ShowInformation("Participants required", "Select two participants for the test match.", window)
-			return
+		participants := make([]string, 0, 2)
+		for _, character := range characters {
+			if selected[character] {
+				participants = append(participants, character)
+				if len(participants) == 2 {
+					break
+				}
+			}
 		}
-		if strings.EqualFold(player1Select.Selected, player2Select.Selected) {
-			dialog.ShowInformation("Invalid participants", "Player 1 and Player 2 must be different characters.", window)
+		if len(participants) < 2 {
+			dialog.ShowInformation("Participants required", "Select at least two participants for the test match.", window)
 			return
 		}
 		ai, err := strconv.Atoi(strings.TrimSpace(aiLevel.Text))
@@ -258,8 +233,8 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		config := ikemen.MatchConfig{
 			InstallationDir: installationDir,
 			ExecutablePath:  executablePath,
-			Player1:         player1Select.Selected,
-			Player2:         player2Select.Selected,
+			Player1:         participants[0],
+			Player2:         participants[1],
 			AILevel:         ai,
 			RoundsToWin:     rounds,
 			Stage:           strings.TrimSpace(stage.Text),
@@ -323,7 +298,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	matchPanel := container.NewVBox(
 		widget.NewSeparator(),
 		widget.NewLabelWithStyle("Single match test", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		container.NewGridWithColumns(2, player1Select, player2Select),
+		widget.NewLabel("The first two selected participants (in select.def order) will be used."),
 		container.NewGridWithColumns(3,
 			container.NewVBox(widget.NewLabel("AI level"), aiLevel),
 			container.NewVBox(widget.NewLabel("Rounds to win"), roundsToWin),

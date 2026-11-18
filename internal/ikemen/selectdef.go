@@ -11,6 +11,8 @@ import (
 )
 
 var ErrCharactersSectionNotFound = errors.New("the [Characters] section was not found in data/select.def")
+var ErrExtraStagesSectionNotFound = errors.New("the [ExtraStages] section was not found in data/select.def")
+var ErrNoStagesFound = errors.New("the [ExtraStages] section does not contain any stage entries")
 
 // LoadCharacters reads the character identifiers from an Ikemen GO installation.
 func LoadCharacters(installationDir string) ([]string, error) {
@@ -102,4 +104,79 @@ func ParseSelectDef(source io.Reader) ([]string, error) {
 		return nil, ErrCharactersSectionNotFound
 	}
 	return characters, nil
+}
+
+
+// LoadFirstStage reads the first stage identifier from the [ExtraStages]
+// section of an Ikemen GO installation's data/select.def.
+func LoadFirstStage(installationDir string) (string, error) {
+	selectDefPath := filepath.Join(installationDir, "data", "select.def")
+	info, err := os.Stat(selectDefPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("could not find %s: %w", selectDefPath, err)
+		}
+		return "", fmt.Errorf("could not access %s: %w", selectDefPath, err)
+	}
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("%s is not a regular file", selectDefPath)
+	}
+
+	file, err := os.Open(selectDefPath)
+	if err != nil {
+		return "", fmt.Errorf("could not open %s: %w", selectDefPath, err)
+	}
+	defer file.Close()
+
+	stage, err := ParseFirstStage(file)
+	if err != nil {
+		return "", fmt.Errorf("could not parse %s: %w", selectDefPath, err)
+	}
+	return stage, nil
+}
+
+// ParseFirstStage returns the first non-empty stage entry in [ExtraStages].
+// It ignores comments and blank lines and uses the first comma-separated field.
+func ParseFirstStage(source io.Reader) (string, error) {
+	scanner := bufio.NewScanner(source)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+	inStages := false
+	foundStages := false
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(strings.TrimPrefix(scanner.Text(), "\\uFEFF"))
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			if inStages {
+				break
+			}
+			if strings.EqualFold(strings.TrimSpace(line[1:len(line)-1]), "ExtraStages") {
+				inStages = true
+				foundStages = true
+			}
+			continue
+		}
+		if !inStages {
+			continue
+		}
+		if comment := strings.IndexByte(line, ';'); comment >= 0 {
+			line = strings.TrimSpace(line[:comment])
+		}
+		if line == "" {
+			continue
+		}
+		stage := strings.TrimSpace(strings.SplitN(line, ",", 2)[0])
+		if stage != "" {
+			return stage, nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading select.def: %w", err)
+	}
+	if !foundStages {
+		return "", ErrExtraStagesSectionNotFound
+	}
+	return "", ErrNoStagesFound
 }
