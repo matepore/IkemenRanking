@@ -3,7 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
-	"path"
+	pathpkg "path"
 	"strconv"
 	"strings"
 
@@ -124,8 +124,8 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		if stagesErr == nil {
 			usedLabels := map[string]int{}
 			for _, stagePath := range stages {
-				label := path.Base(stagePath)
-				if strings.EqualFold(path.Ext(label), ".def") {
+				label := pathpkg.Base(stagePath)
+				if strings.EqualFold(pathpkg.Ext(label), ".def") {
 					label = label[:len(label)-len(path.Ext(label))]
 				}
 				baseLabel := label
