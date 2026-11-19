@@ -242,13 +242,13 @@ The following commits are known from the project work:
 | `5d5fa269938dccfe12ae51d7ce347ed68f972e15` | Global ranking based on all saved matchups |
 | `eba2a0b23d8c280f3da8ac4f453f37ce238a590e` | Refresh global ranking after every completed fight |
 | `095e8c2155755bd10cc1a8576efa4faea8b2b8c0` | Detect Ikemen GO game speed compatibility |
+| `bb64849a2d6a295c117ea174a8aa7a908b6cbb76` | Support legacy and current Ikemen GO match-log formats; add regression tests and project handoff documentation |
 
-**Current change set (pending local execution):** support both old and current
-match-log formats; add parser regression tests; document the project and
-handoff state in `PROJECT_PROGRESS.md`; link the progress document from the
-README and update the architecture notes. The resulting commit SHA should be
-added to this history in the next documentation-updating commit, since a commit
-cannot include its own SHA in its contents.
+**Latest follow-up (pending local execution):** corrected the regular-expression
+syntax to use Go/RE2-compatible capturing groups. The first implementation
+used a Perl-style non-capturing group, which Go's regexp package does not
+support. This correction must be tested with `go test ./...` before considering
+the parser work complete.
 
 ## 10. Current status and next steps
 
