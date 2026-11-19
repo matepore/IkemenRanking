@@ -63,6 +63,16 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	stage.SetSelected(ikemen.RandomStage)
 	stagePaths := map[string]string{ikemen.RandomStage: ikemen.RandomStage}
 	replayPreviouslyCompleted := widget.NewCheck("Replay previously completed fights", nil)
+	gameSpeedOptions := []string{"Slower (-9)", "Slower (-8)", "Slower (-7)", "Slower (-6)", "Slower (-5)", "Slower (-4)", "Slower (-3)", "Slower (-2)", "Slower (-1)", "Normal", "Faster (+1)", "Faster (+2)", "Faster (+3)", "Faster (+4)", "Faster (+5)", "Faster (+6)", "Faster (+7)", "Faster (+8)", "Faster (+9)"}
+	gameSpeedValues := map[string]int{
+		"Slower (-9)": -9, "Slower (-8)": -8, "Slower (-7)": -7, "Slower (-6)": -6,
+		"Slower (-5)": -5, "Slower (-4)": -4, "Slower (-3)": -3, "Slower (-2)": -2,
+		"Slower (-1)": -1, "Normal": 0, "Faster (+1)": 1, "Faster (+2)": 2,
+		"Faster (+3)": 3, "Faster (+4)": 4, "Faster (+5)": 5, "Faster (+6)": 6,
+		"Faster (+7)": 7, "Faster (+8)": 8, "Faster (+9)": 9,
+	}
+	gameSpeed := widget.NewSelect(gameSpeedOptions, nil)
+	gameSpeed.SetSelected("Normal")
 
 	updateTournamentSummary := func() {
 		participantCount := len(selected)
@@ -261,6 +271,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			AILevel:         ai,
 			RoundsToWin:     rounds,
 			Stage:           stagePaths[stage.Selected],
+			GameSpeed:       gameSpeedValues[gameSpeed.Selected],
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -407,6 +418,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			AILevel: ai,
 			RoundsToWin: rounds,
 			Stage: stagePaths[stage.Selected],
+			GameSpeed: gameSpeedValues[gameSpeed.Selected],
 		}
 		replay := replayPreviouslyCompleted.Checked
 		ctx, cancel := context.WithCancel(context.Background())
@@ -457,10 +469,9 @@ func NewMainWindow(application fyne.App) fyne.Window {
 				})
 			}
 			standings, rankingErr := ranking.Calculate(participants, outcomes)
-			stamp := time.Now().Format("20060102-150405.000")
-			matchCSV := filepath.Join(outputDirectory, "ikemen-ranking-matches-"+stamp+".csv")
-			standingCSV := filepath.Join(outputDirectory, "ikemen-ranking-standings-"+stamp+".csv")
-			reportHTML := filepath.Join(outputDirectory, "ikemen-ranking-report-"+stamp+".html")
+			matchCSV := filepath.Join(outputDirectory, "ikemen-ranking-matches.csv")
+			standingCSV := filepath.Join(outputDirectory, "ikemen-ranking-standings.csv")
+			reportHTML := filepath.Join(outputDirectory, "ikemen-ranking-report.html")
 			exportErr := storage.ExportMatchResultsCSV(matchCSV, records)
 			if rankingErr == nil {
 				if err := storage.ExportStandingsCSV(standingCSV, standings); err != nil {
@@ -473,6 +484,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 					Participants: participants,
 					AILevel: config.AILevel,
 					RoundsToWin: config.RoundsToWin,
+					GameSpeed: config.GameSpeed,
 					Stage: config.Stage,
 					Completed: len(records),
 					Total: totalFightCount,
@@ -548,11 +560,13 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		widget.NewLabelWithStyle("Match settings and single-match test", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		widget.NewLabel("The first two selected participants (in select.def order) will be used."),
 		widget.NewLabel("Choose Random to select a stage at random."),
-		container.NewGridWithColumns(3,
+		container.NewGridWithColumns(4,
 			container.NewVBox(widget.NewLabel("AI level"), aiLevel),
 			container.NewVBox(widget.NewLabel("Rounds to win"), roundsToWin),
 			container.NewVBox(widget.NewLabel("Stage"), stage),
+			container.NewVBox(widget.NewLabel("Game speed"), gameSpeed),
 		),
+		widget.NewLabel("Game speed follows Ikemen GO’s -speed option: 0 is normal, positive values are faster, and negative values are slower."),
 		container.NewHBox(runMatchButton, cancelMatchButton),
 	)
 

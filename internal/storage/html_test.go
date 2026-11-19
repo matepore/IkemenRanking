@@ -21,6 +21,7 @@ func TestExportTournamentHTML(t *testing.T) {
 		Participants: []string{"Ryu", "Ken"},
 		AILevel: 8,
 		RoundsToWin: 2,
+		GameSpeed: 4,
 		Stage: "stages/Training.def",
 		Completed: 1,
 		Total: 1,
@@ -44,7 +45,7 @@ func TestExportTournamentHTML(t *testing.T) {
 	html := string(content)
 	for _, expected := range []string{
 		"<!doctype html>", "Tournament Report", "Character standings",
-		"Fight results", "Tournament configuration", "Ryu", "Ken",
+		"Fight results", "Tournament configuration", "Game speed", "Faster (+4)", "Ryu", "Ken",
 		"2 – 0", "stages/Training.def",
 	} {
 		if !strings.Contains(html, expected) {
@@ -73,5 +74,16 @@ func TestExportTournamentHTMLEscapesUserContent(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "&lt;script&gt;") {
 		t.Fatal("report does not HTML-escape participant names")
+	}
+}
+
+func TestExportTournamentHTMLOverwritesPreviousReport(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "report.html")
+	if err := ExportTournamentHTML(path, TournamentReport{Participants: []string{"OldCharacter"}}); err != nil { t.Fatal(err) }
+	if err := ExportTournamentHTML(path, TournamentReport{Participants: []string{"NewCharacter"}}); err != nil { t.Fatal(err) }
+	content, err := os.ReadFile(path)
+	if err != nil { t.Fatal(err) }
+	if strings.Contains(string(content), "OldCharacter") || !strings.Contains(string(content), "NewCharacter") {
+		t.Fatal("HTML report was not replaced with the latest export")
 	}
 }

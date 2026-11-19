@@ -65,8 +65,8 @@ returns completed records if a later fight fails or is cancelled. The UI
 exports completed records and standings calculated from them, so partial
 tournament results are retained. Exports are written to a `results` directory
 beside the IkemenRanking executable, created automatically when needed. Each
-run creates a self-contained, dark-themed HTML report and timestamped CSV files
-for fight results and standings. The HTML report includes the ranking, fight
+export updates the same self-contained, dark-themed HTML report and the same two
+CSV files for fight results and standings, avoiding redundant timestamped copies. The HTML report includes the ranking, fight
 scores, stages, and tournament configuration, and can be opened in a browser
 without installing any additional runtime or dependencies.
 

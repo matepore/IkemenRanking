@@ -15,6 +15,7 @@ type Config struct {
 	AILevel         int
 	RoundsToWin     int
 	Stage           string
+	GameSpeed       int
 }
 
 type MatchRecord struct {
@@ -87,6 +88,9 @@ func run(
 	if config.RoundsToWin < 1 {
 		return nil, fmt.Errorf("rounds to win must be greater than 0")
 	}
+	if config.GameSpeed < -9 || config.GameSpeed > 9 {
+		return nil, fmt.Errorf("game speed must be between -9 and 9")
+}
 
 	saved := make(map[string]MatchRecord, len(matches))
 	if store != nil {
@@ -132,6 +136,7 @@ func run(
 			AILevel:         config.AILevel,
 			RoundsToWin:     config.RoundsToWin,
 			Stage:           config.Stage,
+			GameSpeed:       config.GameSpeed,
 		})
 		if runErr != nil {
 			return collectRecords(matches, saved), fmt.Errorf("fight %d of %d (%s vs %s) failed: %w",

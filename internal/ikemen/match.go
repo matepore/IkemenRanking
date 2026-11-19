@@ -20,6 +20,7 @@ type MatchConfig struct {
 	AILevel         int
 	RoundsToWin     int
 	Stage           string
+	GameSpeed       int
 }
 
 // MatchResult contains the result parsed from Ikemen GO's text log.
@@ -50,6 +51,9 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 	if config.RoundsToWin < 1 {
 		return MatchResult{}, fmt.Errorf("rounds to win must be greater than 0")
 	}
+	if config.GameSpeed < -9 || config.GameSpeed > 9 {
+		return MatchResult{}, fmt.Errorf("game speed must be between -9 and 9")
+}
 
 	executable, err := filepath.Abs(config.ExecutablePath)
 	if err != nil {
@@ -104,6 +108,7 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 		"-p1.ai", strconv.Itoa(config.AILevel),
 		"-p2.ai", strconv.Itoa(config.AILevel),
 		"-rounds", strconv.Itoa(config.RoundsToWin),
+		"-speed", strconv.Itoa(config.GameSpeed),
 		"-windowed",
 		"-log", logName,
 	}
