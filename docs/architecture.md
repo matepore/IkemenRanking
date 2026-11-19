@@ -13,7 +13,7 @@ depend on the graphical interface.
 - `internal/tournament`: round-robin matchup generation and sequential
   tournament execution with progress reporting.
 - `internal/ranking`: points, wins, losses, draws, and standings with shared positions for tied point totals.
-- `internal/storage`: separate CSV exports for individual fight results and final standings.
+- `internal/storage`: persistent SQLite matchup results and global HTML/CSV ranking exports.
 
 ## Character discovery
 
@@ -70,7 +70,7 @@ CSV files for fight results and standings, avoiding redundant timestamped copies
 scores, stages, and tournament configuration, and can be opened in a browser
 without installing any additional runtime or dependencies.
 
-The ranking is sorted by points (one point per win, zero for a loss or draw).
+The global ranking is sorted by points (one point per current matchup won, zero for a loss or draw). Each unordered matchup contributes at most one point: replaying it replaces its saved result rather than adding another point.
 Characters tied on points share the same competition position; their original
 participant order is retained as a stable display order.
 
@@ -80,8 +80,7 @@ participant order is retained as a stable display order.
 - All matches are CPU versus CPU.
 - A win awards one point; a loss awards zero points.
 - Draws award no points.
-- Match results are retained individually and exported along with the final
-  standings as CSV.
+- The latest result for each unique unordered matchup is retained and exported alongside the global standings as CSV.
 
 ## User interface
 
@@ -94,4 +93,4 @@ layer. Tournament orchestration and domain packages must not import Fyne.
 The `storage.Database` component owns the local SQLite database in the application's `results` directory. It records one current result per unordered character pair, using a normalized pair key and an upsert so a replay replaces the prior result rather than accumulating attempts. Results are committed individually, allowing later tournament orchestration to recover completed fights after cancellation or application restarts. The SQLite driver is pure Go and is compiled into the application; no external SQLite DLL or installation is required.
 
 
-The UI exposes a replay option (disabled by default), plus pause, resume, and cancel controls. A pause request takes effect after the active fight has completed and been persisted. Cancellation stops the active process and leaves previously committed records intact. When a tournament starts, its ranking and exports are built from all currently saved results for the selected participants, not only fights launched during that session.
+The UI exposes a replay option (disabled by default), plus pause, resume, and cancel controls. A pause request takes effect after the active fight has completed and been persisted. Cancellation stops the active process and leaves previously committed records intact. Existing matchups are skipped unless replay is enabled; a successful replay replaces the current result for that unordered pair. The database retains one current result per pair, so a matchup can contribute at most one point to its winner. After each tournament run, the application loads every saved matchup, calculates one global ranking across all characters ever recorded, and refreshes the HTML and CSV exports from that complete dataset. Replacing a result removes the previous winner's point and awards the point to the new winner, if any. Existing database rows are retained; no tournament-history schema or data reset is required.

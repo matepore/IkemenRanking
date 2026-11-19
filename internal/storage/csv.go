@@ -10,7 +10,7 @@ import (
 	"github.com/matepore/IkemenRanking/internal/tournament"
 )
 
-// ExportMatchResultsCSV writes one row per completed fight.
+// ExportMatchResultsCSV writes the current saved result for each unique matchup.
 func ExportMatchResultsCSV(filePath string, records []tournament.MatchRecord) error {
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -57,7 +57,7 @@ func ExportMatchResultsCSV(filePath string, records []tournament.MatchRecord) er
 	return nil
 }
 
-// ExportStandingsCSV writes the final (or partial) tournament standings.
+// ExportStandingsCSV writes the current global character standings.
 func ExportStandingsCSV(filePath string, standings []ranking.Standing) error {
 	file, err := os.Create(filePath)
 	if err != nil {

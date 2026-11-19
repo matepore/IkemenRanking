@@ -150,3 +150,24 @@ func TestDatabaseRejectsInvalidFightAndParticipantList(t *testing.T) {
 		t.Fatal("ListFightsForParticipants() error = nil, want duplicate participant error")
 	}
 }
+
+func TestDatabaseListsAllSavedFightsAcrossParticipantSelections(t *testing.T) {
+ ctx:=context.Background()
+ database,err:=OpenDatabase(filepath.Join(t.TempDir(),"ikemen-ranking.db"));if err!=nil{t.Fatal(err)};defer database.Close()
+ seed:=[]tournament.MatchRecord{
+  {Match:tournament.Match{Player1:"A",Player2:"B"},Result:ikemen.MatchResult{Winner:"A",Player1Wins:2}},
+  {Match:tournament.Match{Player1:"C",Player2:"D"},Result:ikemen.MatchResult{Winner:"D",Player2Wins:2}},
+ }
+ for _,r:=range seed{if err:=database.UpsertFight(ctx,r);err!=nil{t.Fatal(err)}}
+ records,err:=database.ListAllFights(ctx);if err!=nil{t.Fatal(err)}
+ if len(records)!=2||records[0].Match.Player1!="A"||records[1].Match.Player1!="C"{t.Fatalf("unexpected all-fights result: %#v",records)}
+ if records[0].Index!=1||records[1].Index!=2{t.Fatalf("unexpected indexes: %#v",records)}
+}
+func TestDatabaseReplacingWinnerKeepsOneUniqueMatchup(t *testing.T){
+ ctx:=context.Background();database,err:=OpenDatabase(filepath.Join(t.TempDir(),"ikemen-ranking.db"));if err!=nil{t.Fatal(err)};defer database.Close()
+ first:=tournament.MatchRecord{Match:tournament.Match{Player1:"A",Player2:"B"},Result:ikemen.MatchResult{Player1Wins:2,Winner:"A"}}
+ replay:=tournament.MatchRecord{Match:tournament.Match{Player1:"B",Player2:"A"},Result:ikemen.MatchResult{Player2Wins:2,Winner:"B"}}
+ if err:=database.UpsertFight(ctx,first);err!=nil{t.Fatal(err)};if err:=database.UpsertFight(ctx,replay);err!=nil{t.Fatal(err)}
+ records,err:=database.ListAllFights(ctx);if err!=nil{t.Fatal(err)}
+ if len(records)!=1||records[0].Result.Winner!="B"{t.Fatalf("expected one matchup with B as current winner, got %#v",records)}
+}

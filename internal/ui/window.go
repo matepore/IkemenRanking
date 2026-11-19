@@ -8,6 +8,7 @@ import (
 	pathpkg "path"
 	"strconv"
 	"strings"
+	"sort"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -459,41 +460,35 @@ func NewMainWindow(application fyne.App) fyne.Window {
 				})
 			})
 
-			outcomes := make([]ranking.MatchOutcome, 0, len(records))
-			for _, record := range records {
-				outcomes = append(outcomes, ranking.MatchOutcome{
-					Player1: record.Match.Player1,
-					Player2: record.Match.Player2,
-					Winner: record.Result.Winner,
-					IsDraw: record.Result.IsDraw,
-				})
+			// Always calculate and export from every saved matchup, not only
+			// the participants or fights from this tournament run.
+			allRecords, rankingErr := database.ListAllFights(context.Background())
+			standings := make([]ranking.Standing, 0)
+			if rankingErr == nil {
+				names := make(map[string]string)
+				for _, record := range allRecords {
+					for _, name := range []string{record.Match.Player1, record.Match.Player2} {
+						key := strings.ToLower(name)
+						if _, ok := names[key]; !ok { names[key] = name }
+					}
+				}
+				globalParticipants := make([]string, 0, len(names))
+				for _, name := range names { globalParticipants = append(globalParticipants, name) }
+				sort.Strings(globalParticipants)
+				outcomes := make([]ranking.MatchOutcome, 0, len(allRecords))
+				for _, record := range allRecords {
+					outcomes = append(outcomes, ranking.MatchOutcome{Player1:record.Match.Player1,Player2:record.Match.Player2,Winner:record.Result.Winner,IsDraw:record.Result.IsDraw})
+				}
+				standings, rankingErr = ranking.Calculate(globalParticipants, outcomes)
 			}
-			standings, rankingErr := ranking.Calculate(participants, outcomes)
 			matchCSV := filepath.Join(outputDirectory, "ikemen-ranking-matches.csv")
 			standingCSV := filepath.Join(outputDirectory, "ikemen-ranking-standings.csv")
 			reportHTML := filepath.Join(outputDirectory, "ikemen-ranking-report.html")
-			exportErr := storage.ExportMatchResultsCSV(matchCSV, records)
+			var exportErr error
 			if rankingErr == nil {
-				if err := storage.ExportStandingsCSV(standingCSV, standings); err != nil {
-					exportErr = errors.Join(exportErr, err)
-				}
-				if err := storage.ExportTournamentHTML(reportHTML, storage.TournamentReport{
-					GeneratedAt: time.Now(),
-					Installation: config.InstallationDir,
-					Executable: config.ExecutablePath,
-					Participants: participants,
-					AILevel: config.AILevel,
-					RoundsToWin: config.RoundsToWin,
-					GameSpeed: config.GameSpeed,
-					Stage: config.Stage,
-					Completed: len(records),
-					Total: totalFightCount,
-					Stopped: runErr != nil,
-					Standings: standings,
-					Matches: records,
-				}); err != nil {
-					exportErr = errors.Join(exportErr, err)
-				}
+				if err := storage.ExportMatchResultsCSV(matchCSV, allRecords); err != nil { exportErr = errors.Join(exportErr, err) }
+				if err := storage.ExportStandingsCSV(standingCSV, standings); err != nil { exportErr = errors.Join(exportErr, err) }
+				if err := storage.ExportRankingHTML(reportHTML, storage.RankingReport{GeneratedAt:time.Now(),Standings:standings,Matches:allRecords}); err != nil { exportErr = errors.Join(exportErr, err) }
 			}
 
 			fyne.Do(func() {

@@ -207,6 +207,31 @@ func (database *Database) ListFightsForParticipants(ctx context.Context, partici
 	return records, nil
 }
 
+ 
+// ListAllFights returns the latest saved result for every unordered character pair.
+func (database *Database) ListAllFights(ctx context.Context) ([]tournament.MatchRecord, error) {
+	rows, err := database.db.QueryContext(ctx,
+		"SELECT player1, player2, player1_wins, player2_wins, draws, winner, is_draw, stage " +
+			"FROM fights ORDER BY player1_key, player2_key")
+	if err != nil { return nil, fmt.Errorf("could not query all saved fights: %w", err) }
+	defer rows.Close()
+	records := make([]tournament.MatchRecord, 0)
+	for rows.Next() {
+		var record tournament.MatchRecord
+		var isDraw int
+		if err := rows.Scan(&record.Match.Player1, &record.Match.Player2,
+			&record.Result.Player1Wins, &record.Result.Player2Wins,
+			&record.Result.Draws, &record.Result.Winner, &isDraw, &record.Result.Stage); err != nil {
+			return nil, fmt.Errorf("could not read saved fight: %w", err)
+		}
+		record.Result.IsDraw = isDraw != 0
+		record.Index = len(records) + 1
+		records = append(records, record)
+	}
+	if err := rows.Err(); err != nil { return nil, fmt.Errorf("could not finish reading saved fights: %w", err) }
+	return records, nil
+}
+
 func boolToInt(value bool) int {
 	if value {
 		return 1

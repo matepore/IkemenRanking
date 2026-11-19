@@ -1,89 +1,43 @@
 package storage
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
-
-	"github.com/matepore/IkemenRanking/internal/ikemen"
-	"github.com/matepore/IkemenRanking/internal/ranking"
-	"github.com/matepore/IkemenRanking/internal/tournament"
+ "os"
+ "path/filepath"
+ "strings"
+ "testing"
+ "time"
+ "github.com/matepore/IkemenRanking/internal/ikemen"
+ "github.com/matepore/IkemenRanking/internal/ranking"
+ "github.com/matepore/IkemenRanking/internal/tournament"
 )
 
-func TestExportTournamentHTML(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "report.html")
-	report := TournamentReport{
-		GeneratedAt: time.Date(2026, 11, 18, 12, 30, 0, 0, time.UTC),
-		Installation: "C:/Games/Ikemen GO",
-		Executable: "C:/Games/Ikemen GO/Ikemen_GO.exe",
-		Participants: []string{"Ryu", "Ken"},
-		AILevel: 8,
-		RoundsToWin: 2,
-		GameSpeed: 4,
-		Stage: "stages/Training.def",
-		Completed: 1,
-		Total: 1,
-		Standings: []ranking.Standing{
-			{Position: 1, Character: "Ryu", Points: 1, Wins: 1, Played: 1},
-			{Position: 2, Character: "Ken", Losses: 1, Played: 1},
-		},
-		Matches: []tournament.MatchRecord{{
-			Index: 1,
-			Match: tournament.Match{Player1: "Ryu", Player2: "Ken"},
-			Result: ikemen.MatchResult{Player1Wins: 2, Player2Wins: 0, Winner: "Ryu", Stage: "stages/Training.def"},
-		}},
-	}
-	if err := ExportTournamentHTML(path, report); err != nil {
-		t.Fatalf("ExportTournamentHTML() error = %v", err)
-	}
-	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("could not read report: %v", err)
-	}
-	html := string(content)
-	for _, expected := range []string{
-		"<!doctype html>", "Tournament Report", "Character standings",
-		"Fight results", "Tournament configuration", "Game speed", "Faster (+4)", "Ryu", "Ken",
-		"2 – 0", "stages/Training.def",
-	} {
-		if !strings.Contains(html, expected) {
-			t.Errorf("report does not contain %q", expected)
-		}
-	}
+func TestExportRankingHTMLIncludesGlobalStandingsAndMatchups(t *testing.T) {
+ path:=filepath.Join(t.TempDir(),"report.html")
+ report:=RankingReport{GeneratedAt:time.Date(2026,11,18,12,30,0,0,time.UTC),
+  Standings:[]ranking.Standing{{Position:1,Character:"Ryu",Points:2,Wins:2,Played:2},{Position:2,Character:"Ken",Points:1,Wins:1,Losses:1,Played:2},{Position:3,Character:"Chun-Li",Losses:2,Played:2}},
+  Matches:[]tournament.MatchRecord{
+   {Index:1,Match:tournament.Match{Player1:"Ryu",Player2:"Ken"},Result:ikemen.MatchResult{Player1Wins:2,Winner:"Ryu",Stage:"Training Room"}},
+   {Index:2,Match:tournament.Match{Player1:"Ryu",Player2:"Chun-Li"},Result:ikemen.MatchResult{Player2Wins:2,Winner:"Chun-Li",Stage:"Temple"}},
+   {Index:3,Match:tournament.Match{Player1:"Ken",Player2:"Chun-Li"},Result:ikemen.MatchResult{Player1Wins:2,Winner:"Ken",Stage:"Castle"}},
+  }}
+ if err:=ExportRankingHTML(path,report);err!=nil{t.Fatal(err)}
+ content,err:=os.ReadFile(path);if err!=nil{t.Fatal(err)};s:=string(content)
+ for _,want:=range []string{"Global Character Ranking","Character standings","Current matchup results","Updated 2026-11-18 12:30:00","Characters ranked","Unique matchups","Ryu","Ken","Chun-Li","Training Room","Temple","Castle","2 – 0"}{if !strings.Contains(s,want){t.Errorf("report missing %q",want)}}
+ if strings.Contains(s,"Tournament configuration")||strings.Contains(s,"Tournament Report"){t.Fatal("report contains tournament-specific sections")}
 }
-
-func TestExportTournamentHTMLEscapesUserContent(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "report.html")
-	report := TournamentReport{
-		Participants: []string{"<script>alert(1)</script>", "Ken"},
-		AILevel: 8,
-		RoundsToWin: 2,
-		Standings: []ranking.Standing{{Position: 1, Character: "<script>alert(1)</script>"}},
-	}
-	if err := ExportTournamentHTML(path, report); err != nil {
-		t.Fatalf("ExportTournamentHTML() error = %v", err)
-	}
-	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(content), "<script>alert(1)</script>") {
-		t.Fatal("report contains unescaped user content")
-	}
-	if !strings.Contains(string(content), "&lt;script&gt;") {
-		t.Fatal("report does not HTML-escape participant names")
-	}
+func TestExportRankingHTMLEscapesCharacterNames(t *testing.T){
+ path:=filepath.Join(t.TempDir(),"report.html")
+ if err:=ExportRankingHTML(path,RankingReport{Standings:[]ranking.Standing{{Position:1,Character:"<script>alert(1)</script>"}}});err!=nil{t.Fatal(err)}
+ content,err:=os.ReadFile(path);if err!=nil{t.Fatal(err)}
+ if strings.Contains(string(content),"<script>alert(1)</script>")||!strings.Contains(string(content),"&lt;script&gt;"){t.Fatal("HTML escaping failed")}
 }
-
-func TestExportTournamentHTMLOverwritesPreviousReport(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "report.html")
-	if err := ExportTournamentHTML(path, TournamentReport{Participants: []string{"OldCharacter"}}); err != nil { t.Fatal(err) }
-	if err := ExportTournamentHTML(path, TournamentReport{Participants: []string{"NewCharacter"}}); err != nil { t.Fatal(err) }
-	content, err := os.ReadFile(path)
-	if err != nil { t.Fatal(err) }
-	if strings.Contains(string(content), "OldCharacter") || !strings.Contains(string(content), "NewCharacter") {
-		t.Fatal("HTML report was not replaced with the latest export")
-	}
+func TestExportRankingHTMLKeepsOlderMatchupsWhenGlobalDataIncludesThem(t *testing.T){
+ path:=filepath.Join(t.TempDir(),"report.html")
+ report:=RankingReport{Standings:[]ranking.Standing{{Position:1,Character:"OldCharacter",Points:1}},Matches:[]tournament.MatchRecord{{Index:1,Match:tournament.Match{Player1:"OldCharacter",Player2:"OldOpponent"},Result:ikemen.MatchResult{Winner:"OldCharacter"}}}}
+ if err:=ExportRankingHTML(path,report);err!=nil{t.Fatal(err)}
+ report.GeneratedAt=time.Now();report.Standings=append(report.Standings,ranking.Standing{Position:2,Character:"NewCharacter",Points:1})
+ report.Matches=append(report.Matches,tournament.MatchRecord{Index:2,Match:tournament.Match{Player1:"NewCharacter",Player2:"NewOpponent"},Result:ikemen.MatchResult{Winner:"NewCharacter"}})
+ if err:=ExportRankingHTML(path,report);err!=nil{t.Fatal(err)}
+ content,err:=os.ReadFile(path);if err!=nil{t.Fatal(err)}
+ for _,v:=range []string{"OldCharacter","OldOpponent","NewCharacter","NewOpponent"}{if !strings.Contains(string(content),v){t.Fatalf("report lost %q",v)}}
 }
