@@ -5,22 +5,16 @@ import (
 	"strings"
 )
 
-// Match represents one individual fight between two tournament participants.
-// Number is the fight's one-based position within the matchup.
+// Match represents one fight between two tournament participants.
 type Match struct {
 	Player1 string
 	Player2 string
-	Number  int
 }
 
-// GenerateMatches creates every unique unordered participant pairing and
-// repeats each pairing matchesPerPair times.
-func GenerateMatches(participants []string, matchesPerPair int) ([]Match, error) {
+// GenerateMatches creates one fight for every unique unordered participant pairing.
+func GenerateMatches(participants []string) ([]Match, error) {
 	if len(participants) < 2 {
 		return nil, fmt.Errorf("at least two participants are required")
-	}
-	if matchesPerPair < 1 {
-		return nil, fmt.Errorf("matches per matchup must be at least 1")
 	}
 
 	seen := make(map[string]struct{}, len(participants))
@@ -38,25 +32,14 @@ func GenerateMatches(participants []string, matchesPerPair int) ([]Match, error)
 
 	participantCount := len(participants)
 	maxInt := int(^uint(0) >> 1)
-	if participantCount > 1 && participantCount > maxInt/(participantCount-1) {
+	if participantCount > maxInt/(participantCount-1) {
 		return nil, fmt.Errorf("participant count is too large")
 	}
 	matchupCount := participantCount * (participantCount - 1) / 2
-	if matchupCount > maxInt/matchesPerPair {
-		return nil, fmt.Errorf("configured fight count is too large")
-	}
-	totalMatches := matchupCount * matchesPerPair
-	matches := make([]Match, 0, totalMatches)
-
+	matches := make([]Match, 0, matchupCount)
 	for i := 0; i < len(participants); i++ {
 		for j := i + 1; j < len(participants); j++ {
-			for number := 1; number <= matchesPerPair; number++ {
-				matches = append(matches, Match{
-					Player1: participants[i],
-					Player2: participants[j],
-					Number:  number,
-				})
-			}
+			matches = append(matches, Match{Player1: participants[i], Player2: participants[j]})
 		}
 	}
 

@@ -56,10 +56,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	characters := make([]string, 0)
 	selected := make(map[string]bool)
 
-	matchesPerMatchup := widget.NewEntry()
-	matchesPerMatchup.SetText("1")
-	matchesPerMatchup.SetPlaceHolder("1")
-
 	aiLevel := widget.NewEntry()
 	aiLevel.SetText("8")
 	roundsToWin := widget.NewEntry()
@@ -69,24 +65,13 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	stagePaths := map[string]string{ikemen.RandomStage: ikemen.RandomStage}
 
 	updateTournamentSummary := func() {
-		count, err := strconv.Atoi(strings.TrimSpace(matchesPerMatchup.Text))
-		if err != nil || count < 1 {
-			totalFights.SetText("Total fights: Enter a whole number greater than 0.")
-			return
-		}
-
 		participantCount := len(selected)
 		matchupCount := participantCount * (participantCount - 1) / 2
-		totalFights.SetText(fmt.Sprintf("Total fights: %d", matchupCount*count))
+		totalFights.SetText(fmt.Sprintf("Total fights: %d", matchupCount))
 	}
-
 
 	updateSelectedCount := func() {
 		selectedCount.SetText(fmt.Sprintf("Selected characters: %d", len(selected)))
-		updateTournamentSummary()
-	}
-
-	matchesPerMatchup.OnChanged = func(string) {
 		updateTournamentSummary()
 	}
 
@@ -238,11 +223,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	})
 
 	selectionControls := container.NewHBox(selectAll, deselectAll, selectedCount)
-	tournamentControls := container.NewHBox(
-		widget.NewLabel("Fights per matchup:"),
-		matchesPerMatchup,
-		totalFights,
-	)
+	tournamentControls := container.NewHBox(totalFights)
 
 	runMatchButton := widget.NewButton("Run test match", nil)
 	cancelMatchButton := widget.NewButton("Cancel match", func() {
@@ -387,11 +368,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			dialog.ShowInformation("Participants required", "Select at least two participants for the tournament.", window)
 			return
 		}
-		perMatchup, err := strconv.Atoi(strings.TrimSpace(matchesPerMatchup.Text))
-		if err != nil || perMatchup < 1 {
-			dialog.ShowInformation("Invalid fight count", "Fights per matchup must be a whole number greater than 0.", window)
-			return
-		}
 		ai, err := strconv.Atoi(strings.TrimSpace(aiLevel.Text))
 		if err != nil || ai < 1 {
 			dialog.ShowInformation("Invalid AI level", "AI level must be a whole number greater than 0.", window)
@@ -402,7 +378,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			dialog.ShowInformation("Invalid rounds", "Rounds to win must be a whole number greater than 0.", window)
 			return
 		}
-		plannedMatches, err := tournament.GenerateMatches(participants, perMatchup)
+		plannedMatches, err := tournament.GenerateMatches(participants)
 		if err != nil {
 			dialog.ShowError(err, window)
 			return
@@ -417,7 +393,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			InstallationDir: installationDir,
 			ExecutablePath: executablePath,
 			Participants: participants,
-			MatchesPerPair: perMatchup,
 			AILevel: ai,
 			RoundsToWin: rounds,
 			Stage: stagePaths[stage.Selected],

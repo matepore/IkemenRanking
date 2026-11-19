@@ -15,7 +15,7 @@ func TestExportMatchResultsCSV(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "matches.csv")
 	records := []tournament.MatchRecord{{
 		Index: 1,
-		Match: tournament.Match{Player1: "A", Player2: "B", Number: 1},
+		Match: tournament.Match{Player1: "A", Player2: "B"},
 		Result: ikemen.MatchResult{Player1Wins: 2, Player2Wins: 1, Winner: "A", Stage: "stages/test.def"},
 	}}
 	if err := ExportMatchResultsCSV(path, records); err != nil {
@@ -26,7 +26,7 @@ func TestExportMatchResultsCSV(t *testing.T) {
 	defer file.Close()
 	rows, err := csv.NewReader(file).ReadAll()
 	if err != nil { t.Fatal(err) }
-	if len(rows) != 2 || rows[1][7] != "A" || rows[1][9] != "stages/test.def" {
+	if len(rows) != 2 || rows[1][6] != "A" || rows[1][8] != "stages/test.def" {
 		t.Fatalf("unexpected CSV rows: %#v", rows)
 	}
 }

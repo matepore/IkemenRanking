@@ -11,7 +11,6 @@ import (
 func TestRunExecutesMatchesSequentiallyAndReportsProgress(t *testing.T) {
 	config := Config{
 		Participants: []string{"A", "B", "C"},
-		MatchesPerPair: 2,
 		AILevel: 8,
 		RoundsToWin: 2,
 		Stage: "Random",
@@ -30,17 +29,17 @@ func TestRunExecutesMatchesSequentiallyAndReportsProgress(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
-	if calls != 6 || len(records) != 6 || len(progress) != 6 {
-		t.Fatalf("calls=%d records=%d progress=%d, want 6 each", calls, len(records), len(progress))
+	if calls != 3 || len(records) != 3 || len(progress) != 3 {
+		t.Fatalf("calls=%d records=%d progress=%d, want 3 each", calls, len(records), len(progress))
 	}
-	if progress[5].Completed != 6 || progress[5].Total != 6 {
-		t.Fatalf("unexpected final progress: %#v", progress[5])
+	if progress[2].Completed != 3 || progress[2].Total != 3 {
+		t.Fatalf("unexpected final progress: %#v", progress[2])
 	}
 }
 
 func TestRunReturnsCompletedRecordsWhenMatchFails(t *testing.T) {
 	wantErr := errors.New("game failed")
-	config := Config{Participants: []string{"A", "B", "C"}, MatchesPerPair: 1, AILevel: 8, RoundsToWin: 2}
+	config := Config{Participants: []string{"A", "B", "C"}, AILevel: 8, RoundsToWin: 2}
 	calls := 0
 	records, err := Run(context.Background(), config, func(context.Context, ikemen.MatchConfig) (ikemen.MatchResult, error) {
 		calls++
@@ -58,7 +57,7 @@ func TestRunReturnsCompletedRecordsWhenMatchFails(t *testing.T) {
 }
 
 func TestRunRejectsInvalidSettings(t *testing.T) {
-	config := Config{Participants: []string{"A", "B"}, MatchesPerPair: 1, AILevel: 0, RoundsToWin: 2}
+	config := Config{Participants: []string{"A", "B"}, AILevel: 0, RoundsToWin: 2}
 	if _, err := Run(context.Background(), config, func(context.Context, ikemen.MatchConfig) (ikemen.MatchResult, error) {
 		t.Fatal("runner should not be called for invalid config")
 		return ikemen.MatchResult{}, nil

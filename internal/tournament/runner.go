@@ -12,7 +12,6 @@ type Config struct {
 	InstallationDir string
 	ExecutablePath  string
 	Participants    []string
-	MatchesPerPair  int
 	AILevel         int
 	RoundsToWin     int
 	Stage           string
@@ -42,7 +41,7 @@ func Run(ctx context.Context, config Config, runMatch MatchRunner, onProgress fu
 	if runMatch == nil {
 		return nil, fmt.Errorf("match runner is required")
 	}
-	matches, err := GenerateMatches(config.Participants, config.MatchesPerPair)
+	matches, err := GenerateMatches(config.Participants)
 	if err != nil {
 		return nil, err
 	}

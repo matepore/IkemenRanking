@@ -18,7 +18,7 @@ func ExportMatchResultsCSV(filePath string, records []tournament.MatchRecord) er
 	}
 	writer := csv.NewWriter(file)
 	if err := writer.Write([]string{
-		"Fight", "Matchup fight", "Player 1", "Player 2",
+		"Fight", "Player 1", "Player 2",
 		"Player 1 round wins", "Player 2 round wins", "Draws",
 		"Winner", "Is draw", "Stage",
 	}); err != nil {
@@ -32,7 +32,6 @@ func ExportMatchResultsCSV(filePath string, records []tournament.MatchRecord) er
 		}
 		row := []string{
 			strconv.Itoa(record.Index),
-			strconv.Itoa(record.Match.Number),
 			record.Match.Player1,
 			record.Match.Player2,
 			strconv.Itoa(record.Result.Player1Wins),
