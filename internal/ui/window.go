@@ -40,7 +40,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	selectedCount := widget.NewLabel("Selected characters: 0")
 	totalFights := widget.NewLabel("Total fights: 0")
 	status := widget.NewLabel("Select the root folder of your Ikemen GO installation.")
-	resultsFolderLabel := widget.NewLabel("Results folder: select an installation first.")
 	tournamentProgressLabel := widget.NewLabel("Tournament progress: not started.")
 	rankingSummary := widget.NewLabel("Final ranking will appear here.")
 	tournamentProgress := widget.NewProgressBar()
@@ -49,7 +48,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	var executablePath string
 	var matchCancel context.CancelFunc
 	var tournamentCancel context.CancelFunc
-	var resultsDir string
 	matchRunning := false
 	tournamentRunning := false
 
@@ -113,8 +111,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		}
 
 		installationDir = path
-		resultsDir = path
-		resultsFolderLabel.SetText(fmt.Sprintf("Results folder: %s", resultsDir))
 		executablePath = ""
 		executablePathLabel.SetText("Executable: no file selected.")
 		characters = loaded
@@ -182,21 +178,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 				return
 			}
 			loadInstallation(uri.Path())
-		}, window)
-		folderDialog.Show()
-	})
-
-	selectResultsFolder := widget.NewButton("Select results folder", func() {
-		folderDialog := dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
-			if err != nil {
-				dialog.ShowError(err, window)
-				return
-			}
-			if uri == nil {
-				return
-			}
-			resultsDir = uri.Path()
-			resultsFolderLabel.SetText(fmt.Sprintf("Results folder: %s", resultsDir))
 		}, window)
 		folderDialog.Show()
 	})
@@ -323,8 +304,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		title,
 		widget.NewSeparator(),
 		description,
-		container.NewHBox(selectFolder, selectExecutable, selectResultsFolder),
-		resultsFolderLabel,
+		container.NewHBox(selectFolder, selectExecutable),
 		installationPathLabel,
 		executablePathLabel,
 		characterCount,
@@ -384,10 +364,11 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			return
 		}
 		totalFightCount := len(plannedMatches)
-		if resultsDir == "" {
-			resultsDir = installationDir
+		outputDirectory, err := storage.EnsureResultsDir()
+		if err != nil {
+			dialog.ShowError(err, window)
+			return
 		}
-		outputDirectory := resultsDir
 
 		config := tournament.Config{
 			InstallationDir: installationDir,
@@ -432,9 +413,26 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			stamp := time.Now().Format("20060102-150405.000")
 			matchCSV := filepath.Join(outputDirectory, "ikemen-ranking-matches-"+stamp+".csv")
 			standingCSV := filepath.Join(outputDirectory, "ikemen-ranking-standings-"+stamp+".csv")
+			reportHTML := filepath.Join(outputDirectory, "ikemen-ranking-report-"+stamp+".html")
 			exportErr := storage.ExportMatchResultsCSV(matchCSV, records)
 			if rankingErr == nil {
 				if err := storage.ExportStandingsCSV(standingCSV, standings); err != nil {
+					exportErr = errors.Join(exportErr, err)
+				}
+				if err := storage.ExportTournamentHTML(reportHTML, storage.TournamentReport{
+					GeneratedAt: time.Now(),
+					Installation: config.InstallationDir,
+					Executable: config.ExecutablePath,
+					Participants: participants,
+					AILevel: config.AILevel,
+					RoundsToWin: config.RoundsToWin,
+					Stage: config.Stage,
+					Completed: len(records),
+					Total: totalFightCount,
+					Stopped: runErr != nil,
+					Standings: standings,
+					Matches: records,
+				}); err != nil {
 					exportErr = errors.Join(exportErr, err)
 				}
 			}
@@ -475,7 +473,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 					status.SetText(completionMessage)
 					dialog.ShowError(fmt.Errorf("tournament data could not be fully exported: %w", exportErr), window)
 				} else {
-					status.SetText(fmt.Sprintf("%s CSV files saved to %s.", completionMessage, outputDirectory))
+					status.SetText(fmt.Sprintf("%s HTML report and CSV files saved to %s.", completionMessage, outputDirectory))
 				}
 				if runErr != nil {
 					dialog.ShowError(runErr, window)

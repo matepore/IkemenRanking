@@ -36,11 +36,9 @@ and label widgets so recycled rows show the correct character.
 
 ## Tournament configuration and matchup generation
 
-The user configures the number of individual fights played by each pair. The
-default is one fight per pair, and the interface updates the estimated total
-when the selection or configured value changes. The tournament package
-generates each unique unordered pair the configured number of times and
-validates participants and fight count.
+Every unique unordered participant pair is played exactly once per tournament
+run. The tournament package generates each unordered pair and validates the
+participant selection.
 
 ## Single-match execution
 
@@ -64,10 +62,13 @@ malformed required counters are errors and are not interpreted as draws.
 The tournament runner executes each generated fight sequentially through the
 Ikemen GO match runner. It reports progress after each completed fight and
 returns completed records if a later fight fails or is cancelled. The UI
-exports those completed records and the standings calculated from them, so
-partial tournament results are retained. The user can choose the destination
-folder; by default, files are written to the selected Ikemen GO installation
-directory. Each run creates timestamped match-results and standings CSV files.
+exports completed records and standings calculated from them, so partial
+tournament results are retained. Exports are written to a `results` directory
+beside the IkemenRanking executable, created automatically when needed. Each
+run creates a self-contained, dark-themed HTML report and timestamped CSV files
+for fight results and standings. The HTML report includes the ranking, fight
+scores, stages, and tournament configuration, and can be opened in a browser
+without installing any additional runtime or dependencies.
 
 The ranking is sorted by points (one point per win, zero for a loss or draw).
 Characters tied on points share the same competition position; their original
