@@ -48,6 +48,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	var executablePath string
 	var matchCancel context.CancelFunc
 	var tournamentCancel context.CancelFunc
+	var tournamentPause *tournament.PauseController
 	matchRunning := false
 	tournamentRunning := false
 
@@ -61,6 +62,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	stage := widget.NewSelect([]string{ikemen.RandomStage}, nil)
 	stage.SetSelected(ikemen.RandomStage)
 	stagePaths := map[string]string{ikemen.RandomStage: ikemen.RandomStage}
+	replayPreviouslyCompleted := widget.NewCheck("Replay previously completed fights", nil)
 
 	updateTournamentSummary := func() {
 		participantCount := len(selected)
@@ -204,7 +206,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	})
 
 	selectionControls := container.NewHBox(selectAll, deselectAll, selectedCount)
-	tournamentControls := container.NewHBox(totalFights)
+	tournamentControls := container.NewVBox(totalFights, replayPreviouslyCompleted)
 
 	runMatchButton := widget.NewButton("Run test match", nil)
 	cancelMatchButton := widget.NewButton("Cancel match", func() {
@@ -324,6 +326,28 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		}
 	})
 	cancelTournamentButton.Hide()
+	var pauseTournamentButton *widget.Button
+	var resumeTournamentButton *widget.Button
+	pauseTournamentButton = widget.NewButton("Pause tournament", func() {
+		if tournamentPause != nil {
+			tournamentPause.Pause()
+			pauseTournamentButton.Hide()
+			resumeTournamentButton.Show()
+			resumeTournamentButton.Disable()
+			status.SetText("Pause requested. The current fight will finish before the tournament pauses.")
+		}
+	})
+	resumeTournamentButton = widget.NewButton("Resume tournament", func() {
+		if tournamentPause != nil {
+			tournamentPause.Resume()
+			resumeTournamentButton.Hide()
+			pauseTournamentButton.Show()
+			status.SetText("Resuming tournament...")
+		}
+	})
+	pauseTournamentButton.Hide()
+	resumeTournamentButton.Hide()
+	resumeTournamentButton.Disable()
 
 	tournamentRunButton.OnTapped = func() {
 		if matchRunning || tournamentRunning {
@@ -370,6 +394,12 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			return
 		}
 
+		database, err := storage.OpenResultsDatabase(outputDirectory)
+		if err != nil {
+			dialog.ShowError(err, window)
+			return
+		}
+
 		config := tournament.Config{
 			InstallationDir: installationDir,
 			ExecutablePath: executablePath,
@@ -378,25 +408,42 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			RoundsToWin: rounds,
 			Stage: stagePaths[stage.Selected],
 		}
+		replay := replayPreviouslyCompleted.Checked
 		ctx, cancel := context.WithCancel(context.Background())
 		tournamentCancel = cancel
+		pauseController := &tournament.PauseController{}
+		tournamentPause = pauseController
 		tournamentRunning = true
 		tournamentRunButton.Disable()
 		runMatchButton.Disable()
 		cancelTournamentButton.Show()
+		pauseTournamentButton.Show()
+		resumeTournamentButton.Hide()
+		resumeTournamentButton.Disable()
 		tournamentProgress.SetValue(0)
 		tournamentProgressLabel.SetText("Tournament progress: starting...")
 		rankingSummary.SetText("Tournament is running.")
 		status.SetText("Tournament started.")
 
 		go func() {
-			records, runErr := tournament.Run(ctx, config, ikemen.RunMatch, func(progress tournament.Progress) {
+			defer database.Close()
+			lastProgress := tournament.Progress{Total: totalFightCount}
+			records, runErr := tournament.RunPersistentWithControl(ctx, config, database, replay, ikemen.RunMatch, func(progress tournament.Progress) {
+				lastProgress = progress
 				fyne.Do(func() {
-					tournamentProgress.SetValue(float64(progress.Completed) / float64(progress.Total))
+					if progress.Total > 0 {
+						tournamentProgress.SetValue(float64(progress.Completed) / float64(progress.Total))
+					}
 					tournamentProgressLabel.SetText(fmt.Sprintf(
-						"Tournament progress: %d/%d — %s vs %s",
-						progress.Completed, progress.Total, progress.Match.Player1, progress.Match.Player2,
+						"Tournament progress: %d/%d processed — played %d, skipped %d. %s vs %s",
+						progress.Completed, progress.Total, progress.Played, progress.Skipped,
+						progress.Match.Player1, progress.Match.Player2,
 					))
+				})
+			}, pauseController, func() {
+				fyne.Do(func() {
+					status.SetText("Tournament paused. Resume to continue.")
+					resumeTournamentButton.Enable()
 				})
 			})
 
@@ -440,10 +487,13 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			fyne.Do(func() {
 				defer cancel()
 				tournamentCancel = nil
+				tournamentPause = nil
 				tournamentRunning = false
 				tournamentRunButton.Enable()
 				runMatchButton.Enable()
 				cancelTournamentButton.Hide()
+				pauseTournamentButton.Hide()
+				resumeTournamentButton.Hide()
 
 				if rankingErr != nil {
 					status.SetText("Tournament finished, but the ranking could not be calculated.")
@@ -460,14 +510,25 @@ func NewMainWindow(application fyne.App) fyne.Window {
 					))
 				}
 				rankingSummary.SetText(summary.String())
-				tournamentProgress.SetValue(float64(len(records)) / float64(totalFightCount))
-				tournamentProgressLabel.SetText(fmt.Sprintf("Tournament progress: %d/%d fights completed.", len(records), totalFightCount))
+				if totalFightCount > 0 {
+					tournamentProgress.SetValue(float64(len(records)) / float64(totalFightCount))
+				}
+				tournamentProgressLabel.SetText(fmt.Sprintf(
+					"Tournament progress: %d/%d matchups have saved results. Played %d, skipped %d.",
+					len(records), totalFightCount, lastProgress.Played, lastProgress.Skipped,
+				))
 
 				completionMessage := ""
 				if runErr != nil {
-					completionMessage = fmt.Sprintf("Tournament stopped after %d of %d fights.", len(records), totalFightCount)
+					completionMessage = fmt.Sprintf(
+						"Tournament stopped with %d/%d saved results. Played %d, skipped %d.",
+						len(records), totalFightCount, lastProgress.Played, lastProgress.Skipped,
+					)
 				} else {
-					completionMessage = fmt.Sprintf("Tournament completed. %d fights were played.", len(records))
+					completionMessage = fmt.Sprintf(
+						"Tournament complete. Played %d fights and skipped %d previously completed matchups.",
+						lastProgress.Played, lastProgress.Skipped,
+					)
 				}
 				if exportErr != nil {
 					status.SetText(completionMessage)
@@ -500,7 +561,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		widget.NewLabelWithStyle("Tournament execution", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		tournamentProgressLabel,
 		tournamentProgress,
-		container.NewHBox(tournamentRunButton, cancelTournamentButton),
+		container.NewHBox(tournamentRunButton, pauseTournamentButton, resumeTournamentButton, cancelTournamentButton),
 		rankingSummary,
 	)
 	window.SetContent(container.NewBorder(header, container.NewVBox(matchPanel, tournamentPanel), nil, nil, characterList))

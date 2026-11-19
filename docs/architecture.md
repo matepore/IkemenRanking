@@ -92,3 +92,6 @@ layer. Tournament orchestration and domain packages must not import Fyne.
 ## Persistent fight storage
 
 The `storage.Database` component owns the local SQLite database in the application's `results` directory. It records one current result per unordered character pair, using a normalized pair key and an upsert so a replay replaces the prior result rather than accumulating attempts. Results are committed individually, allowing later tournament orchestration to recover completed fights after cancellation or application restarts. The SQLite driver is pure Go and is compiled into the application; no external SQLite DLL or installation is required.
+
+
+The UI exposes a replay option (disabled by default), plus pause, resume, and cancel controls. A pause request takes effect after the active fight has completed and been persisted. Cancellation stops the active process and leaves previously committed records intact. When a tournament starts, its ranking and exports are built from all currently saved results for the selected participants, not only fights launched during that session.
