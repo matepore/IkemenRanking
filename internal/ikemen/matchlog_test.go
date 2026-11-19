@@ -125,8 +125,8 @@ func TestParseMatchLogDrawsCounterWithQuotedAndUnquotedKeys(t *testing.T) {
 		name string
 		log  string
 	}{
-		{name: "legacy unquoted key", log: "[p1wins] => 1\\n[p2wins] => 0\\n[draws] => 2"},
-		{name: "current quoted key", log: `["wins"] => table: 0x1 { [1] => 1 [2] => 0 }\\n["draws"] => 2`},
+		{name: "legacy unquoted key", log: "[p1wins] => 1\n[p2wins] => 0\n[draws] => 2"},
+		{name: "current quoted key", log: "[\"wins\"] => table: 0x1 { [1] => 1 [2] => 0 }\n[\"draws\"] => 2"},
 	}
 
 	for _, test := range tests {

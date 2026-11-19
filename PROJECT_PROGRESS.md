@@ -243,14 +243,17 @@ The following commits are known from the project work:
 | `eba2a0b23d8c280f3da8ac4f453f37ce238a590e` | Refresh global ranking after every completed fight |
 | `095e8c2155755bd10cc1a8576efa4faea8b2b8c0` | Detect Ikemen GO game speed compatibility |
 | `bb64849a2d6a295c117ea174a8aa7a908b6cbb76` | Support legacy and current Ikemen GO match-log formats; add regression tests and project handoff documentation |
+| `a5bcc727283664d90976cf6d28719317492ffa83` | Correct Go/RE2 regular-expression syntax in the match-log parser |
+| `bbcf128eade5ce0e6a325050cf4843e4f31c77ce` | Fix capture-group selection for the optional draws counter |
 
 **Follow-up after user's test report:** the first user-run `go test ./...`
 identified a capture-group indexing bug in the optional `draws` field: after
 making the expression Go/RE2-compatible, the key name was capture group 1 and
 the numeric value was capture group 2. The parser now converts the final capture
 group for that expression, and a regression test covers both quoted and
-unquoted `draws` keys. This correction is committed but still requires a fresh
-local `go test ./...` run from the user.
+unquoted `draws` keys. The regression fixtures use actual newline characters
+so the multiline parser behavior is exercised. This correction is committed
+but still requires a fresh local `go test ./...` run from the user.
 
 ## 10. Current status and next steps
 
