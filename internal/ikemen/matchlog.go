@@ -30,7 +30,7 @@ func ParseMatchLog(contents string) (MatchResult, error) {
 
 	draws := 0
 	if match := drawsPattern.FindStringSubmatch(contents); match != nil {
-		draws, err = strconv.Atoi(match[1])
+		draws, err = strconv.Atoi(match[len(match)-1])
 		if err != nil {
 			return MatchResult{}, fmt.Errorf("invalid draws counter: %w", err)
 		}

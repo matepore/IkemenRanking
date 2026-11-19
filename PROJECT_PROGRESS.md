@@ -244,17 +244,19 @@ The following commits are known from the project work:
 | `095e8c2155755bd10cc1a8576efa4faea8b2b8c0` | Detect Ikemen GO game speed compatibility |
 | `bb64849a2d6a295c117ea174a8aa7a908b6cbb76` | Support legacy and current Ikemen GO match-log formats; add regression tests and project handoff documentation |
 
-**Latest follow-up (pending local execution):** corrected the regular-expression
-syntax to use Go/RE2-compatible capturing groups. The first implementation
-used a Perl-style non-capturing group, which Go's regexp package does not
-support. This correction must be tested with `go test ./...` before considering
-the parser work complete.
+**Follow-up after user's test report:** the first user-run `go test ./...`
+identified a capture-group indexing bug in the optional `draws` field: after
+making the expression Go/RE2-compatible, the key name was capture group 1 and
+the numeric value was capture group 2. The parser now converts the final capture
+group for that expression, and a regression test covers both quoted and
+unquoted `draws` keys. This correction is committed but still requires a fresh
+local `go test ./...` run from the user.
 
 ## 10. Current status and next steps
 
 ### Immediate next steps
 
-1. User runs `go test ./...` on the updated branch.
+1. User reruns `go test ./...` after the draws capture-group fix.
 2. User runs one completed match using current Nightly and verifies the result
    is accepted and persisted.
 3. User runs a match using the legacy engine to confirm no regression.

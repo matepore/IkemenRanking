@@ -119,3 +119,25 @@ func TestParseMatchLogDoesNotReadRoundScoresAsMatchWins(t *testing.T) {
 		t.Fatal("ParseMatchLog() error = nil, want an error")
 	}
 }
+
+func TestParseMatchLogDrawsCounterWithQuotedAndUnquotedKeys(t *testing.T) {
+	tests := []struct {
+		name string
+		log  string
+	}{
+		{name: "legacy unquoted key", log: "[p1wins] => 1\\n[p2wins] => 0\\n[draws] => 2"},
+		{name: "current quoted key", log: `["wins"] => table: 0x1 { [1] => 1 [2] => 0 }\\n["draws"] => 2`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := ParseMatchLog(test.log)
+			if err != nil {
+				t.Fatalf("ParseMatchLog() error = %v", err)
+			}
+			if got.Draws != 2 {
+				t.Fatalf("Draws = %d, want 2", got.Draws)
+			}
+		})
+	}
+}
