@@ -64,16 +64,24 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	stage.SetSelected(ikemen.RandomStage)
 	stagePaths := map[string]string{ikemen.RandomStage: ikemen.RandomStage}
 	replayPreviouslyCompleted := widget.NewCheck("Replay previously completed fights", nil)
-	gameSpeedOptions := []string{"Slower (-9)", "Slower (-8)", "Slower (-7)", "Slower (-6)", "Slower (-5)", "Slower (-4)", "Slower (-3)", "Slower (-2)", "Slower (-1)", "Normal", "Faster (+1)", "Faster (+2)", "Faster (+3)", "Faster (+4)", "Faster (+5)", "Faster (+6)", "Faster (+7)", "Faster (+8)", "Faster (+9)"}
-	gameSpeedValues := map[string]int{
-		"Slower (-9)": -9, "Slower (-8)": -8, "Slower (-7)": -7, "Slower (-6)": -6,
-		"Slower (-5)": -5, "Slower (-4)": -4, "Slower (-3)": -3, "Slower (-2)": -2,
-		"Slower (-1)": -1, "Normal": 0, "Faster (+1)": 1, "Faster (+2)": 2,
-		"Faster (+3)": 3, "Faster (+4)": 4, "Faster (+5)": 5, "Faster (+6)": 6,
-		"Faster (+7)": 7, "Faster (+8)": 8, "Faster (+9)": 9,
+	var gameSpeedMode ikemen.GameSpeedMode
+	gameSpeedModeDetected := false
+	gameSpeedValues := map[string]int{}
+	gameSpeed := widget.NewSelect(nil, nil)
+	gameSpeed.Disable()
+	gameSpeedInfo := widget.NewLabel("Game speed system: select an Ikemen GO installation to detect compatibility.")
+	updateGameSpeedOptions := func(mode ikemen.GameSpeedMode) error {
+		options, values, defaultValue, err := ikemen.GameSpeedOptions(mode)
+		if err != nil { return err }
+		gameSpeedMode = mode
+		gameSpeedValues = values
+		gameSpeed.Options = options
+		gameSpeed.SetSelected(defaultValue)
+		gameSpeed.Enable()
+		gameSpeedModeDetected = true
+		gameSpeedInfo.SetText("Detected game speed system: " + mode.String())
+		return nil
 	}
-	gameSpeed := widget.NewSelect(gameSpeedOptions, nil)
-	gameSpeed.SetSelected("Normal")
 
 	updateTournamentSummary := func() {
 		participantCount := len(selected)
@@ -124,6 +132,14 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		}
 
 		installationDir = path
+		gameSpeedModeDetected = false
+		gameSpeed.Disable()
+		gameSpeedInfo.SetText("Detecting Ikemen GO game speed system...")
+		if detectedMode, detectErr := ikemen.DetectGameSpeedMode(path); detectErr != nil {
+			gameSpeedInfo.SetText("Game speed system: detection failed. Select the Ikemen GO root folder.")
+		} else if err := updateGameSpeedOptions(detectedMode); err != nil {
+			gameSpeedInfo.SetText("Game speed system: detection failed.")
+		}
 		executablePath = ""
 		executablePathLabel.SetText("Executable: no file selected.")
 		characters = loaded
@@ -240,6 +256,10 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			dialog.ShowInformation("Executable required", "Select the Ikemen GO executable you want to run.", window)
 			return
 		}
+		if !gameSpeedModeDetected {
+			dialog.ShowInformation("Unsupported Ikemen GO version", "IkemenRanking could not identify this installation's -speed implementation. Make sure you selected the root folder of the Ikemen GO installation.", window)
+			return
+		}
 		participants := make([]string, 0, 2)
 		for _, character := range characters {
 			if selected[character] {
@@ -273,6 +293,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			RoundsToWin:     rounds,
 			Stage:           stagePaths[stage.Selected],
 			GameSpeed:       gameSpeedValues[gameSpeed.Selected],
+			GameSpeedMode:   gameSpeedMode,
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -373,6 +394,10 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			dialog.ShowInformation("Executable required", "Select the Ikemen GO executable you want to run.", window)
 			return
 		}
+		if !gameSpeedModeDetected {
+			dialog.ShowInformation("Unsupported Ikemen GO version", "IkemenRanking could not identify this installation's -speed implementation. Make sure you selected the root folder of the Ikemen GO installation.", window)
+			return
+		}
 
 		participants := make([]string, 0, len(selected))
 		for _, character := range characters {
@@ -420,6 +445,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			RoundsToWin: rounds,
 			Stage: stagePaths[stage.Selected],
 			GameSpeed: gameSpeedValues[gameSpeed.Selected],
+			GameSpeedMode: gameSpeedMode,
 		}
 		replay := replayPreviouslyCompleted.Checked
 		ctx, cancel := context.WithCancel(context.Background())
@@ -535,7 +561,8 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			container.NewVBox(widget.NewLabel("Stage"), stage),
 			container.NewVBox(widget.NewLabel("Game speed"), gameSpeed),
 		),
-		widget.NewLabel("Game speed follows Ikemen GO’s -speed option: 0 is normal, positive values are faster, and negative values are slower."),
+		gameSpeedInfo,
+		widget.NewLabel("Only normal and faster speeds are available. Options depend on the detected Ikemen GO version."),
 		container.NewHBox(runMatchButton, cancelMatchButton),
 	)
 

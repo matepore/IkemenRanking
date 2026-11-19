@@ -21,6 +21,7 @@ type MatchConfig struct {
 	RoundsToWin     int
 	Stage           string
 	GameSpeed       int
+	GameSpeedMode   GameSpeedMode
 }
 
 // MatchResult contains the result parsed from Ikemen GO's text log.
@@ -51,9 +52,9 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 	if config.RoundsToWin < 1 {
 		return MatchResult{}, fmt.Errorf("rounds to win must be greater than 0")
 	}
-	if config.GameSpeed < -9 || config.GameSpeed > 9 {
-		return MatchResult{}, fmt.Errorf("game speed must be between -9 and 9")
-}
+	if err := ValidateGameSpeed(config.GameSpeedMode, config.GameSpeed); err != nil {
+		return MatchResult{}, err
+	}
 
 	executable, err := filepath.Abs(config.ExecutablePath)
 	if err != nil {

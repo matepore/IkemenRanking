@@ -15,12 +15,13 @@ func TestRunExecutesMatchesSequentiallyAndReportsProgress(t *testing.T) {
 		RoundsToWin: 2,
 		Stage: "Random",
 		GameSpeed: 4,
+		GameSpeedMode: ikemen.GameSpeedModeSteps,
 	}
 	calls := 0
 	progress := make([]Progress, 0)
 	records, err := Run(context.Background(), config, func(_ context.Context, matchConfig ikemen.MatchConfig) (ikemen.MatchResult, error) {
 		calls++
-		if matchConfig.AILevel != 8 || matchConfig.RoundsToWin != 2 || matchConfig.Stage != "Random" || matchConfig.GameSpeed != 4 {
+		if matchConfig.AILevel != 8 || matchConfig.RoundsToWin != 2 || matchConfig.Stage != "Random" || matchConfig.GameSpeed != 4 || matchConfig.GameSpeedMode != ikemen.GameSpeedModeSteps {
 			t.Fatalf("unexpected match config: %#v", matchConfig)
 		}
 		return ikemen.MatchResult{Winner: matchConfig.Player1, Player1Wins: 2}, nil
