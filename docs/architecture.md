@@ -87,3 +87,8 @@ participant order is retained as a stable display order.
 
 All application interface text is written in English. The UI is a presentation
 layer. Tournament orchestration and domain packages must not import Fyne.
+
+
+## Persistent fight storage
+
+The `storage.Database` component owns the local SQLite database in the application's `results` directory. It records one current result per unordered character pair, using a normalized pair key and an upsert so a replay replaces the prior result rather than accumulating attempts. Results are committed individually, allowing later tournament orchestration to recover completed fights after cancellation or application restarts. The SQLite driver is pure Go and is compiled into the application; no external SQLite DLL or installation is required.

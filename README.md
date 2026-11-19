@@ -5,6 +5,8 @@ character rankings from their results.
 
 ## Project status
 
+The application stores completed fight results in a local SQLite database under `results/`. The database is embedded through a pure-Go SQLite driver, so end users do not need to install SQLite separately.
+
 The application provides a Fyne desktop window to select an Ikemen GO
 installation and executable, read characters and stages from `data/select.def`,
 choose participants, run an individual test match, and execute a round-robin

@@ -2,7 +2,10 @@ module github.com/matepore/IkemenRanking
 
 go 1.22
 
-require fyne.io/fyne/v2 v2.6.3
+require (
+	fyne.io/fyne/v2 v2.6.3
+	modernc.org/sqlite v1.34.5
+)
 
 require (
 	fyne.io/systray v1.11.0 // indirect
