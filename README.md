@@ -43,8 +43,9 @@ go build -o bin/ikemen-ranking ./cmd/ikemen-ranking
 
 ## Documentation
 
-See [docs/architecture.md](docs/architecture.md) for the package boundaries
-and integration approach.
-
+- [Architecture](docs/architecture.md): package boundaries and integration
+  approach.
+- [Project progress and handoff](PROJECT_PROGRESS.md): detailed project state,
+  decisions, milestones, verification history, and continuation instructions.
 
 Tournament execution can be paused safely between fights and resumed in the same session. Cancelling a tournament preserves every result already committed to SQLite. On a later launch, running the same participant selection resumes by skipping previously completed matchups. Enable **Replay previously completed fights** to run those pairs again; each successful replay replaces its prior result.

@@ -53,9 +53,11 @@ match.
 The process runs outside the Fyne event loop, keeping the interface
 responsive. A cancellation control terminates the launched process. The same
 runner is reused by the tournament executor. The
-runner gives each invocation a unique temporary log filename. The log parser
-reads the `p1wins`, `p2wins`, and optional `draws` counters. Missing or
-malformed required counters are errors and are not interpreted as draws.
+runner gives each invocation a unique temporary log filename. The log parser supports both legacy `p1wins`/`p2wins` scalar counters and the
+current `wins` table (`[1]` = P1, `[2]` = P2), plus an optional `draws`
+counter. Both representations are normalized to the same `MatchResult`.
+Missing or malformed required counters are errors and are not interpreted as
+draws.
 
 ## Tournament execution and result export
 
