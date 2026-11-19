@@ -564,7 +564,14 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		container.NewHBox(tournamentRunButton, pauseTournamentButton, resumeTournamentButton, cancelTournamentButton),
 		rankingSummary,
 	)
-	window.SetContent(container.NewBorder(header, container.NewVBox(matchPanel, tournamentPanel), nil, nil, characterList))
+	characterListArea := container.NewGridWrap(fyne.NewSize(1000, 360), characterList)
+	pageContent := container.NewVBox(
+		header,
+		characterListArea,
+		matchPanel,
+		tournamentPanel,
+	)
+	window.SetContent(container.NewVScroll(pageContent))
 	return window
 }
 
