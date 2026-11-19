@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"path/filepath"
 	pathpkg "path"
+	"sort"
 	"strconv"
 	"strings"
-	"sort"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -441,8 +441,14 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		go func() {
 			defer database.Close()
 			lastProgress := tournament.Progress{Total: totalFightCount}
+			var progressExportErr error
 			records, runErr := tournament.RunPersistentWithControl(ctx, config, database, replay, ikemen.RunMatch, func(progress tournament.Progress) {
 				lastProgress = progress
+				// The fight has already been persisted when this callback runs.
+				// Refresh the global report immediately so it stays current during a tournament.
+				if _, err := exportGlobalRanking(context.Background(), database, outputDirectory); err != nil {
+					progressExportErr = errors.Join(progressExportErr, err)
+				}
 				fyne.Do(func() {
 					if progress.Total > 0 {
 						tournamentProgress.SetValue(float64(progress.Completed) / float64(progress.Total))
@@ -460,36 +466,9 @@ func NewMainWindow(application fyne.App) fyne.Window {
 				})
 			})
 
-			// Always calculate and export from every saved matchup, not only
-			// the participants or fights from this tournament run.
-			allRecords, rankingErr := database.ListAllFights(context.Background())
-			standings := make([]ranking.Standing, 0)
-			if rankingErr == nil {
-				names := make(map[string]string)
-				for _, record := range allRecords {
-					for _, name := range []string{record.Match.Player1, record.Match.Player2} {
-						key := strings.ToLower(name)
-						if _, ok := names[key]; !ok { names[key] = name }
-					}
-				}
-				globalParticipants := make([]string, 0, len(names))
-				for _, name := range names { globalParticipants = append(globalParticipants, name) }
-				sort.Strings(globalParticipants)
-				outcomes := make([]ranking.MatchOutcome, 0, len(allRecords))
-				for _, record := range allRecords {
-					outcomes = append(outcomes, ranking.MatchOutcome{Player1:record.Match.Player1,Player2:record.Match.Player2,Winner:record.Result.Winner,IsDraw:record.Result.IsDraw})
-				}
-				standings, rankingErr = ranking.Calculate(globalParticipants, outcomes)
-			}
-			matchCSV := filepath.Join(outputDirectory, "ikemen-ranking-matches.csv")
-			standingCSV := filepath.Join(outputDirectory, "ikemen-ranking-standings.csv")
-			reportHTML := filepath.Join(outputDirectory, "ikemen-ranking-report.html")
-			var exportErr error
-			if rankingErr == nil {
-				if err := storage.ExportMatchResultsCSV(matchCSV, allRecords); err != nil { exportErr = errors.Join(exportErr, err) }
-				if err := storage.ExportStandingsCSV(standingCSV, standings); err != nil { exportErr = errors.Join(exportErr, err) }
-				if err := storage.ExportRankingHTML(reportHTML, storage.RankingReport{GeneratedAt:time.Now(),Standings:standings,Matches:allRecords}); err != nil { exportErr = errors.Join(exportErr, err) }
-			}
+			// Final refresh also covers runs in which every matchup was skipped.
+			standings, finalExportErr := exportGlobalRanking(context.Background(), database, outputDirectory)
+			exportErr := errors.Join(progressExportErr, finalExportErr)
 
 			fyne.Do(func() {
 				defer cancel()
@@ -502,11 +481,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 				pauseTournamentButton.Hide()
 				resumeTournamentButton.Hide()
 
-				if rankingErr != nil {
-					status.SetText("Tournament finished, but the ranking could not be calculated.")
-					dialog.ShowError(rankingErr, window)
-					return
-				}
 				var summary strings.Builder
 				summary.WriteString("Position  Character  Points  W-L-D\n")
 				for _, standing := range standings {
@@ -582,6 +556,60 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	)
 	window.SetContent(container.NewVScroll(pageContent))
 	return window
+}
+
+
+ // exportGlobalRanking regenerates all reports from every current saved matchup.
+ // It is called after each completed fight and once again when a run finishes.
+func exportGlobalRanking(ctx context.Context, database *storage.Database, outputDirectory string) ([]ranking.Standing, error) {
+	records, err := database.ListAllFights(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[string]string)
+	for _, record := range records {
+		for _, name := range []string{record.Match.Player1, record.Match.Player2} {
+			key := strings.ToLower(name)
+			if _, exists := names[key]; !exists {
+				names[key] = name
+			}
+		}
+	}
+	participants := make([]string, 0, len(names))
+	for _, name := range names {
+		participants = append(participants, name)
+	}
+	sort.Strings(participants)
+
+	outcomes := make([]ranking.MatchOutcome, 0, len(records))
+	for _, record := range records {
+		outcomes = append(outcomes, ranking.MatchOutcome{
+			Player1: record.Match.Player1,
+			Player2: record.Match.Player2,
+			Winner: record.Result.Winner,
+			IsDraw: record.Result.IsDraw,
+		})
+	}
+	standings, err := ranking.Calculate(participants, outcomes)
+	if err != nil {
+		return nil, err
+	}
+
+	var exportErr error
+	if err := storage.ExportMatchResultsCSV(filepath.Join(outputDirectory, "ikemen-ranking-matches.csv"), records); err != nil {
+		exportErr = errors.Join(exportErr, err)
+	}
+	if err := storage.ExportStandingsCSV(filepath.Join(outputDirectory, "ikemen-ranking-standings.csv"), standings); err != nil {
+		exportErr = errors.Join(exportErr, err)
+	}
+	if err := storage.ExportRankingHTML(filepath.Join(outputDirectory, "ikemen-ranking-report.html"), storage.RankingReport{
+		GeneratedAt: time.Now(),
+		Standings: standings,
+		Matches: records,
+	}); err != nil {
+		exportErr = errors.Join(exportErr, err)
+	}
+	return standings, exportErr
 }
 
 func contains(values []string, target string) bool {
