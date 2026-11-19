@@ -322,7 +322,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	cancelTournamentButton := widget.NewButton("Cancel tournament", func() {
 		if tournamentCancel != nil {
 			tournamentCancel()
-			status.SetText("Cancelling tournament after the current fight...")
+			status.SetText("Cancelling tournament...")
 		}
 	})
 	cancelTournamentButton.Hide()
