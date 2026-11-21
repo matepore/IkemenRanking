@@ -1,0 +1,24 @@
+# Go build outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+/dist/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Local configuration and editor files
+.env
+.vscode/
+
+# Runtime output
+/output/
+*.log
+
+/results/
