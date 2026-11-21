@@ -149,7 +149,7 @@ reliably identify the implementation.
 [draws] => 0
 ```
 
-**Current format:** a `wins` table, where array index 1 is P1 and index 2 is P2:
+**Current format:** a `Wins` table, where array index 1 is P1 and index 2 is P2. Real Nightly output capitalizes keys such as `Draws` and `Wins`; the parser matches field names case-insensitively:
 
 ```text
 ["draws"] => 1
@@ -207,7 +207,7 @@ The user has manually confirmed the following behavior:
 because it required legacy `p1wins` / `p2wins` fields. The parser has now been
 extended to accept the current `wins[1]` / `wins[2]` representation as well.
 Automated tests were added for both formats and malformed/incomplete data.
-The user ran `go test ./...` successfully, but a real Nightly fight still fails with a missing `p1wins` counter. The parser tests therefore do not reproduce the actual Nightly log. The next diagnostic change preserves failed match logs and reports their paths. A shared UI checkbox is also being added to retry unexpected Ikemen GO process exits up to three times (four attempts total); parser errors and cancellations are not retried.
+The user supplied the real Nightly log. It uses capitalized keys `Draws` and `Wins`, with `Wins[1] = 2` and `Wins[2] = 0`. The earlier parser expected lowercase key names, explaining why it did not recognize the table. The parser now matches field names case-insensitively, with a regression test for Nightly capitalization and nested round data. A prior change also preserves failed logs and adds an opt-in checkbox to retry unexpected engine process exits up to three times; parser errors and cancellations are not retried.
 
 ## 8. Test and build workflow
 
@@ -309,3 +309,10 @@ recover decisions, constraints, current state, and the next concrete actions.
 - Preserve the generated match log when reading or parsing fails and include its path in the error, instead of deleting the evidence unconditionally.
 - Add a checkbox shared by single-match tests and tournaments to retry unexpected non-zero Ikemen GO process exits up to three times (four total attempts). Intermediate crash logs are discarded; the final failed attempt keeps its log. Match-log parsing errors and cancellation are not retried.
 - This change is not considered verified until the user runs the full Go test suite and performs a Nightly test.
+
+
+### Nightly log fixture follow-up
+
+- Actual user-provided Nightly output uses capitalized `Draws` and `Wins` keys. The previous parser's case-sensitive lowercase patterns missed the `Wins` table and incorrectly fell back to the legacy `p1wins` error.
+- Updated key matching to be case-insensitive and added a regression test with the real capitalization, `Wins[1] = 2`, `Wins[2] = 0`, and nested round score data.
+- Expected parsed result for the supplied log: P1 wins 2, P2 wins 0, draws 0.

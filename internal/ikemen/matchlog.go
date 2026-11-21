@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	player1WinsPattern = regexp.MustCompile(`(?m)\[p1wins\]\s*=>\s*(\d+)`)
-	player2WinsPattern = regexp.MustCompile(`(?m)\[p2wins\]\s*=>\s*(\d+)`)
-	drawsPattern       = regexp.MustCompile(`(?m)\[("draws"|'draws'|draws)\]\s*=>\s*(\d+)`)
-	winsTablePattern   = regexp.MustCompile(`(?m)\[("wins"|'wins'|wins)\]\s*=>[^\n]*\{`)
+	player1WinsPattern = regexp.MustCompile(`(?im)\[p1wins\]\s*=>\s*(\d+)`)
+	player2WinsPattern = regexp.MustCompile(`(?im)\[p2wins\]\s*=>\s*(\d+)`)
+	drawsPattern       = regexp.MustCompile(`(?im)\[("draws"|'draws'|draws)\]\s*=>\s*(\d+)`)
+	winsTablePattern   = regexp.MustCompile(`(?im)\[("wins"|'wins'|wins)\]\s*=>[^\n]*\{`)
 	p1ArrayIndex       = regexp.MustCompile(`(?m)\[1\]\s*=>\s*(\d+)`)
 	p2ArrayIndex       = regexp.MustCompile(`(?m)\[2\]\s*=>\s*(\d+)`)
 )

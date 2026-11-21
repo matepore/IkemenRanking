@@ -49,6 +49,43 @@ func TestParseMatchLogCurrentWinsTableFormat(t *testing.T) {
 	}
 }
 
+func TestParseMatchLogNightlyCapitalizedKeys(t *testing.T) {
+	contents := `table: 0x10f5ec96300 {
+  ["MatchTime"] => 2922
+  ["RoundTime"] => 5940
+  ["WinSide"] => 0
+  ["LastRound"] => 2
+  ["Draws"] => 0
+  ["Wins"] => table: 0x10f5ec96360 {
+    [1] => 2
+    [2] => 0
+  }
+  ["TeamModes"] => table: 0x10f5ec963c0 {
+    [1] => 0
+    [2] => 0
+  }
+  ["TotalScore"] => table: 0x10f5ec96420 {
+    [1] => 52300
+    [2] => 6900
+  }
+  ["Rounds"] => table: 0x10f5ec96480 {
+    [1] => table: 0x10f5ec964e0 {
+      ["Score"] => table: 0x10f5ec96540 {
+        [1] => 32600
+        [2] => 2300
+      }
+    }
+  }
+}`
+
+	got, err := ParseMatchLog(contents)
+	if err != nil {
+		t.Fatalf("ParseMatchLog() error = %v", err)
+	}
+	if got.Player1Wins != 2 || got.Player2Wins != 0 || got.Draws != 0 {
+		t.Fatalf("unexpected counters: %#v", got)
+	}
+}
 func TestParseMatchLogCurrentWinsTableAllowsMissingDrawCounter(t *testing.T) {
 	got, err := ParseMatchLog(`["wins"] => table: 0x123 {
 		[1] => 2
