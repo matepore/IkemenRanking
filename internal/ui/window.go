@@ -64,6 +64,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	stage.SetSelected(ikemen.RandomStage)
 	stagePaths := map[string]string{ikemen.RandomStage: ikemen.RandomStage}
 	replayPreviouslyCompleted := widget.NewCheck("Replay previously completed fights", nil)
+	retryCrashes := widget.NewCheck("Retry fights if Ikemen GO crashes unexpectedly (up to 3 retries)", nil)
 	var gameSpeedMode ikemen.GameSpeedMode
 	gameSpeedModeDetected := false
 	gameSpeedValues := map[string]int{}
@@ -294,6 +295,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			Stage:           stagePaths[stage.Selected],
 			GameSpeed:       gameSpeedValues[gameSpeed.Selected],
 			GameSpeedMode:   gameSpeedMode,
+			RetryOnCrash:    retryCrashes.Checked,
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -446,6 +448,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			Stage: stagePaths[stage.Selected],
 			GameSpeed: gameSpeedValues[gameSpeed.Selected],
 			GameSpeedMode: gameSpeedMode,
+			RetryOnCrash: retryCrashes.Checked,
 		}
 		replay := replayPreviouslyCompleted.Checked
 		ctx, cancel := context.WithCancel(context.Background())
@@ -562,6 +565,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			container.NewVBox(widget.NewLabel("Game speed"), gameSpeed),
 		),
 		gameSpeedInfo,
+		retryCrashes,
 		widget.NewLabel("Only normal and faster speeds are available. Options depend on the detected Ikemen GO version."),
 		container.NewHBox(runMatchButton, cancelMatchButton),
 	)

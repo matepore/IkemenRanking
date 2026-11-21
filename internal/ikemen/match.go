@@ -2,6 +2,7 @@ package ikemen
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -22,6 +23,7 @@ type MatchConfig struct {
 	Stage           string
 	GameSpeed       int
 	GameSpeedMode   GameSpeedMode
+	RetryOnCrash    bool
 }
 
 // MatchResult contains the result parsed from Ikemen GO's text log.
@@ -34,8 +36,26 @@ type MatchResult struct {
 	IsDraw      bool
 }
 
-// RunMatch launches one fight and parses its log before returning.
-// The executable is run with the installation directory as its working directory.
+// MaxCrashRetries is the number of additional attempts after Ikemen GO exits
+// unsuccessfully. The initial attempt plus these retries make at most four runs.
+const MaxCrashRetries = 3
+
+type processExitError struct {
+	details string
+	logPath string
+}
+
+func (e *processExitError) Error() string {
+	message := "Ikemen GO exited unexpectedly"
+	if e.details != "" {
+		message += ": " + e.details
+	}
+	return fmt.Sprintf("%s (match log: %s)", message, e.logPath)
+}
+
+// RunMatch launches one fight and parses its log before returning. When
+// RetryOnCrash is enabled, only an unsuccessful process exit is retried;
+// invalid configuration, cancellation, and match-log parsing errors are not.
 func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 	if strings.TrimSpace(config.ExecutablePath) == "" {
 		return MatchResult{}, fmt.Errorf("Ikemen GO executable path is required")
@@ -56,6 +76,27 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 		return MatchResult{}, err
 	}
 
+	return runWithCrashRetries(config.RetryOnCrash, func() (MatchResult, error) {
+		return runMatchAttempt(ctx, config)
+	})
+}
+
+func runWithCrashRetries(retry bool, run func() (MatchResult, error)) (MatchResult, error) {
+	for attempt := 0; ; attempt++ {
+		result, err := run()
+		if err == nil {
+			return result, nil
+		}
+		var exitErr *processExitError
+		if !retry || !errors.As(err, &exitErr) || attempt >= MaxCrashRetries {
+			return MatchResult{}, err
+		}
+		// Intermediate crash logs are not needed once a retry is scheduled.
+		_ = os.Remove(exitErr.logPath)
+	}
+}
+
+func runMatchAttempt(ctx context.Context, config MatchConfig) (MatchResult, error) {
 	executable, err := filepath.Abs(config.ExecutablePath)
 	if err != nil {
 		return MatchResult{}, fmt.Errorf("could not resolve Ikemen GO executable path: %w", err)
@@ -86,13 +127,11 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 	logPath := tempLog.Name()
 	logName := filepath.Base(logPath)
 	if err := tempLog.Close(); err != nil {
-		_ = os.Remove(logPath)
 		return MatchResult{}, fmt.Errorf("could not prepare a temporary match log: %w", err)
 	}
 	if err := os.Remove(logPath); err != nil {
 		return MatchResult{}, fmt.Errorf("could not prepare a temporary match log: %w", err)
 	}
-	defer os.Remove(logPath)
 
 	stage := strings.TrimSpace(config.Stage)
 	if stage == "" || strings.EqualFold(stage, RandomStage) {
@@ -120,26 +159,24 @@ func RunMatch(ctx context.Context, config MatchConfig) (MatchResult, error) {
 	output, err := command.CombinedOutput()
 	if err != nil {
 		if ctx.Err() != nil {
+			_ = os.Remove(logPath)
 			return MatchResult{}, fmt.Errorf("Ikemen GO match was cancelled: %w", ctx.Err())
 		}
 		details := strings.TrimSpace(string(output))
-		if details != "" {
-			return MatchResult{}, fmt.Errorf("Ikemen GO exited with an error: %w: %s", err, details)
-		}
-		return MatchResult{}, fmt.Errorf("Ikemen GO exited with an error: %w", err)
+		return MatchResult{}, &processExitError{details: fmt.Sprintf("%v: %s", err, details), logPath: logPath}
 	}
 
 	logData, err := os.ReadFile(logPath)
 	if err != nil {
-		return MatchResult{}, fmt.Errorf("could not read Ikemen GO match log: %w", err)
+		return MatchResult{}, fmt.Errorf("could not read Ikemen GO match log at %s: %w", logPath, err)
 	}
 	result, err := ParseMatchLog(string(logData))
 	if err != nil {
-		return MatchResult{}, fmt.Errorf("could not parse Ikemen GO match log: %w", err)
+		return MatchResult{}, fmt.Errorf("could not parse Ikemen GO match log: %w (log preserved at %s)", err, logPath)
 	}
+	_ = os.Remove(logPath)
 
 	result.Stage = stage
-
 	switch {
 	case result.Player1Wins > result.Player2Wins:
 		result.Winner = config.Player1

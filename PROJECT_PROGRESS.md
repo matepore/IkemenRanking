@@ -207,8 +207,7 @@ The user has manually confirmed the following behavior:
 because it required legacy `p1wins` / `p2wins` fields. The parser has now been
 extended to accept the current `wins[1]` / `wins[2]` representation as well.
 Automated tests were added for both formats and malformed/incomplete data.
-The user still needs to run the test suite and manually confirm a Nightly fight
-after this parser change.
+The user ran `go test ./...` successfully, but a real Nightly fight still fails with a missing `p1wins` counter. The parser tests therefore do not reproduce the actual Nightly log. The next diagnostic change preserves failed match logs and reports their paths. A shared UI checkbox is also being added to retry unexpected Ikemen GO process exits up to three times (four attempts total); parser errors and cancellations are not retried.
 
 ## 8. Test and build workflow
 
@@ -259,12 +258,11 @@ but still requires a fresh local `go test ./...` run from the user.
 
 ### Immediate next steps
 
-1. User reruns `go test ./...` after the draws capture-group fix.
-2. User runs one completed match using current Nightly and verifies the result
-   is accepted and persisted.
-3. User runs a match using the legacy engine to confirm no regression.
-4. If either format fails, capture the generated log (remove personal paths if
-   desired) and add a regression fixture before changing the parser.
+1. Build and run `go test ./...` after the diagnostic-log and crash-retry changes.
+2. Run one Nightly fight. If parsing fails, the error will include the preserved log path; share that file so the parser can be fixed against the actual output.
+3. Verify that enabling the crash-retry checkbox retries an unexpected non-zero Ikemen GO process exit, up to three additional attempts.
+4. Confirm that disabling the checkbox preserves the previous fail-fast behavior, and that parser errors are not retried.
+5. Run a legacy-engine fight to check for regressions.
 
 ### Compatibility audit to follow
 
@@ -304,3 +302,10 @@ When continuing this project in a new chat:
 
 This file should remain concise enough to navigate but detailed enough to
 recover decisions, constraints, current state, and the next concrete actions.
+
+
+### Pending change in this work session
+
+- Preserve the generated match log when reading or parsing fails and include its path in the error, instead of deleting the evidence unconditionally.
+- Add a checkbox shared by single-match tests and tournaments to retry unexpected non-zero Ikemen GO process exits up to three times (four total attempts). Intermediate crash logs are discarded; the final failed attempt keeps its log. Match-log parsing errors and cancellation are not retried.
+- This change is not considered verified until the user runs the full Go test suite and performs a Nightly test.

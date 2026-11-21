@@ -96,3 +96,8 @@ The `storage.Database` component owns the local SQLite database in the applicati
 
 
 The UI exposes a replay option (disabled by default), plus pause, resume, and cancel controls. A pause request takes effect after the active fight has completed and been persisted. Cancellation stops the active process and leaves previously committed records intact. Existing matchups are skipped unless replay is enabled; a successful replay replaces the current result for that unordered pair. The database retains one current result per pair, so a matchup can contribute at most one point to its winner. After each tournament run, the application loads every saved matchup, calculates one global ranking across all characters ever recorded, and refreshes the HTML and CSV exports from that complete dataset. Replacing a result removes the previous winner's point and awards the point to the new winner, if any. Existing database rows are retained; no tournament-history schema or data reset is required.
+
+
+## Match execution diagnostics and crash retries
+
+Failed match-log parsing preserves the generated log and includes its path in the returned error, allowing compatibility issues to be diagnosed from real engine output. The UI exposes an opt-in retry setting shared by individual test matches and tournament fights. When enabled, an unexpected non-zero Ikemen GO process exit is retried up to three additional times (four attempts total). Cancellation, invalid configuration, and match-log parsing errors are not retried.

@@ -17,6 +17,7 @@ type Config struct {
 	Stage           string
 	GameSpeed       int
 	GameSpeedMode   ikemen.GameSpeedMode
+	RetryOnCrash    bool
 }
 
 type MatchRecord struct {
@@ -139,6 +140,7 @@ func run(
 			Stage:           config.Stage,
 			GameSpeed:       config.GameSpeed,
 			GameSpeedMode:   config.GameSpeedMode,
+			RetryOnCrash:    config.RetryOnCrash,
 		})
 		if runErr != nil {
 			return collectRecords(matches, saved), fmt.Errorf("fight %d of %d (%s vs %s) failed: %w",
