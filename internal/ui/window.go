@@ -27,11 +27,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	window := application.NewWindow("IkemenRanking")
 	window.Resize(fyne.NewSize(1000, 760))
 
-	title := widget.NewLabelWithStyle(
-		"IkemenRanking",
-		fyne.TextAlignLeading,
-		fyne.TextStyle{Bold: true},
-	)
 	description := widget.NewLabel(
 		"Automate CPU-vs-CPU fights in Ikemen GO and generate character rankings.",
 	)
@@ -341,7 +336,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		"IkemenRanking",
 		"CPU-vs-CPU tournament manager",
 		container.NewVBox(
-			title,
 			description,
 			container.NewHBox(selectFolder, selectExecutable),
 			installationPathLabel,
