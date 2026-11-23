@@ -35,8 +35,6 @@ func (t graphiteTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant
 		theme.ColorNameSeparator:          color.NRGBA{R: 48, G: 54, B: 66, A: 255},
 		theme.ColorNameInputBorder:        color.NRGBA{R: 48, G: 54, B: 66, A: 255},
 		theme.ColorNamePressed:            color.NRGBA{R: 91, G: 39, B: 47, A: 110},
-		theme.ColorNameInputBorder:        color.NRGBA{R: 48, G: 54, B: 66, A: 255},
-		theme.ColorNamePressed:            color.NRGBA{R: 91, G: 39, B: 47, A: 110},
 		theme.ColorNameScrollBar:           color.NRGBA{R: 82, G: 89, B: 103, A: 255},
 		theme.ColorNameSelection:           color.NRGBA{R: 91, G: 39, B: 47, A: 255},
 		theme.ColorNameShadow:              color.NRGBA{R: 0, G: 0, B: 0, A: 90},
