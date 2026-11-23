@@ -326,6 +326,7 @@ recover decisions, constraints, current state, and the next concrete actions.
 - Added a reusable section-card helper and grouped the main window into distinct installation, character-selection, character-roster, match-configuration, tournament-settings, and tournament-execution panels.
 - Applied the custom theme at application startup. The existing vertically scrollable single-window workflow is retained.
 - No tournament, ranking, persistence, export, or Ikemen GO integration logic was intentionally changed.
+- Draft review: [PR #2](https://github.com/matepore/IkemenRanking/pull/2).
 - Automated tests and Windows GUI build have **not** been run by the assistant in this environment. User-side visual verification is still required, particularly for card spacing, scroll behavior, and long character lists.
 - Commits on this branch:
   - `b3cbb775cc3639a00480f33bef53d57fd3fcfb2f` — add Graphite & Crimson theme.
@@ -335,3 +336,4 @@ recover decisions, constraints, current state, and the next concrete actions.
   - `f742e32c8a62335fe495575a3a4a7a9adafea416` — refine subtle hover and focus states.
   - `482bf0897579789cf85617a9ca6db9e46e9aadb8` — remove duplicate theme color entries during review.
   - `5e57bffc271f11c94be30be12426d1ba0f5a14fa` — optimize theme color lookups with a switch.
+  - `70c1aebe72c52fd67b80d8e88d50e39656cd8af8` — remove duplicate title text from the header card.
