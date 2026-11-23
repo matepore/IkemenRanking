@@ -8,6 +8,7 @@ import (
 
 func main() {
 	application := app.NewWithID("com.matepore.ikemenranking")
+	application.Settings().SetTheme(ui.NewGraphiteTheme())
 	window := ui.NewMainWindow(application)
 	window.ShowAndRun()
 }
