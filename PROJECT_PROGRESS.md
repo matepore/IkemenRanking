@@ -333,3 +333,5 @@ recover decisions, constraints, current state, and the next concrete actions.
   - `10d3769fd51c98ac384dbfb33ed71ae664235d98` — apply theme at startup.
   - `b7c89004d57d3de264f5fc6810c7d566e8b4504c` — reorganize main window into section panels.
   - `f742e32c8a62335fe495575a3a4a7a9adafea416` — refine subtle hover and focus states.
+  - `482bf0897579789cf85617a9ca6db9e46e9aadb8` — remove duplicate theme color entries during review.
+  - `5e57bffc271f11c94be30be12426d1ba0f5a14fa` — optimize theme color lookups with a switch.
