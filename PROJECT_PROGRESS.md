@@ -332,3 +332,4 @@ recover decisions, constraints, current state, and the next concrete actions.
   - `711b97dbe2009c62094bf04d05ae5f1918780ddc` — add reusable section cards.
   - `10d3769fd51c98ac384dbfb33ed71ae664235d98` — apply theme at startup.
   - `b7c89004d57d3de264f5fc6810c7d566e8b4504c` — reorganize main window into section panels.
+  - `f742e32c8a62335fe495575a3a4a7a9adafea416` — refine subtle hover and focus states.
