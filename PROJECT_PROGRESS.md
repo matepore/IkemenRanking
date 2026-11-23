@@ -17,7 +17,7 @@ application uses Fyne for its desktop UI and a pure-Go SQLite driver for
 persistence.
 
 - Repository: https://github.com/matepore/IkemenRanking
-- Active development branch: `feature/initial-gui`
+- Default integration branch: `main`
 - Main language: Go (module targets Go 1.22)
 - UI language: English
 - Primary development environment: Windows / PowerShell
@@ -316,3 +316,19 @@ recover decisions, constraints, current state, and the next concrete actions.
 - Actual user-provided Nightly output uses capitalized `Draws` and `Wins` keys. The previous parser's case-sensitive lowercase patterns missed the `Wins` table and incorrectly fell back to the legacy `p1wins` error.
 - Updated key matching to be case-insensitive and added a regression test with the real capitalization, `Wins[1] = 2`, `Wins[2] = 0`, and nested round score data.
 - Expected parsed result for the supplied log: P1 wins 2, P2 wins 0, draws 0.
+
+
+## 12. Graphite & Crimson UI refresh
+
+- Approved visual direction: Graphite & Crimson, balanced crimson accent.
+- Implementation branch: `feature/graphite-theme`, created from `main` at `7e1d703062fcaee104988e3790a93c886166aa03`.
+- Added a custom Fyne theme with graphite backgrounds, muted text, crimson primary/focus states, and semantic success/warning/error colors.
+- Added a reusable section-card helper and grouped the main window into distinct installation, character-selection, character-roster, match-configuration, tournament-settings, and tournament-execution panels.
+- Applied the custom theme at application startup. The existing vertically scrollable single-window workflow is retained.
+- No tournament, ranking, persistence, export, or Ikemen GO integration logic was intentionally changed.
+- Automated tests and Windows GUI build have **not** been run by the assistant in this environment. User-side visual verification is still required, particularly for card spacing, scroll behavior, and long character lists.
+- Commits on this branch:
+  - `b3cbb775cc3639a00480f33bef53d57fd3fcfb2f` — add Graphite & Crimson theme.
+  - `711b97dbe2009c62094bf04d05ae5f1918780ddc` — add reusable section cards.
+  - `10d3769fd51c98ac384dbfb33ed71ae664235d98` — apply theme at startup.
+  - `b7c89004d57d3de264f5fc6810c7d566e8b4504c` — reorganize main window into section panels.
