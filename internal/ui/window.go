@@ -337,20 +337,27 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		}()
 	}
 
-	header := container.NewVBox(
-		title,
-		widget.NewSeparator(),
-		description,
-		container.NewHBox(selectFolder, selectExecutable),
-		installationPathLabel,
-		executablePathLabel,
-		characterCount,
-		status,
-		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Select the characters that will participate", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+	header := newSectionCard(
+		"IkemenRanking",
+		"CPU-vs-CPU tournament manager",
+		container.NewVBox(
+			title,
+			description,
+			container.NewHBox(selectFolder, selectExecutable),
+			installationPathLabel,
+			executablePathLabel,
+			characterCount,
+			status,
+		),
+	)
+	selectionPanel := newSectionCard(
+		"Character selection",
+		"Choose the participants for the test match or round-robin tournament",
 		selectionControls,
-		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Tournament settings", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+	)
+	tournamentSettingsPanel := newSectionCard(
+		"Tournament settings",
+		"Current selection overview",
 		tournamentControls,
 	)
 	tournamentRunButton := widget.NewButton("Run tournament", nil)
@@ -553,9 +560,10 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		}()
 	}
 
-	matchPanel := container.NewVBox(
-		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Match settings and single-match test", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+	matchPanel := newSectionCard(
+		"Match configuration",
+		"Configure the single-match test and tournament fights",
+		container.NewVBox(
 		widget.NewLabel("The first two selected participants (in select.def order) will be used."),
 		widget.NewLabel("Choose Random to select a stage at random."),
 		container.NewGridWithColumns(4,
@@ -568,21 +576,30 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		retryCrashes,
 		widget.NewLabel("Only normal and faster speeds are available. Options depend on the detected Ikemen GO version."),
 		container.NewHBox(runMatchButton, cancelMatchButton),
+		),
 	)
 
-	tournamentPanel := container.NewVBox(
-		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Tournament execution", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+	tournamentPanel := newSectionCard(
+		"Tournament execution",
+		"Track progress, pause or cancel the current run",
+		container.NewVBox(
 		tournamentProgressLabel,
 		tournamentProgress,
 		container.NewHBox(tournamentRunButton, pauseTournamentButton, resumeTournamentButton, cancelTournamentButton),
 		rankingSummary,
+		),
 	)
-	characterListArea := container.NewGridWrap(fyne.NewSize(1000, 360), characterList)
+	characterListArea := newSectionCard(
+		"Character roster",
+		"Select characters from the loaded Ikemen GO installation",
+		container.NewGridWrap(fyne.NewSize(1000, 360), characterList),
+	)
 	pageContent := container.NewVBox(
 		header,
+		selectionPanel,
 		characterListArea,
 		matchPanel,
+		tournamentSettingsPanel,
 		tournamentPanel,
 	)
 	window.SetContent(container.NewVScroll(pageContent))
