@@ -42,6 +42,12 @@ func (l pathRowLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	entry, browse := objects[0], objects[1]
 	browseSize := browse.MinSize()
 	entryWidth := size.Width - browseSize.Width - l.gap
+	// Cap the field width so Browse stays adjacent rather than being
+	// positioned far from the text field on wide windows.
+	const maxEntryWidth = float32(560)
+	if entryWidth > maxEntryWidth {
+		entryWidth = maxEntryWidth
+	}
 	if entryWidth < 0 {
 		entryWidth = 0
 	}

@@ -367,3 +367,12 @@ recover decisions, constraints, current state, and the next concrete actions.
 - Replace Border-based installation path rows with a custom flexible layout: the entry fills the available width and Browse remains immediately adjacent when the window is resized.
 - Scope is limited to native dialog lifecycle/threading and installation-path presentation; tournament, ranking, persistence, export, and Ikemen GO integration logic are unchanged.
 - Verification status: source changes committed, but Windows runtime behavior, GUI layout, Go tests, and Windows build have not been executed in this environment. Test both native dialogs before considering the crash fix runtime-confirmed.
+
+
+## 15. Replace unstable Windows COM picker and constrain Browse row width
+
+- The user confirmed that the previous change did not fix either reported issue. The latest crash still occurs in go-common-file-dialog v1.2.0 while releasing IFileOpenDialog, including the executable picker.
+- Removed go-common-file-dialog and its now-unused go-ole dependency from the Windows UI path and module manifests.
+- Windows now uses Fyne's built-in folder/file dialogs, matching the existing non-Windows fallback. This prioritizes stability over the third-party native COM appearance; the executable picker retains its .exe filter.
+- Constrained the path entry to a maximum width of 560 Fyne units. Browse remains immediately after the field rather than being pushed toward the far right on wide windows.
+- Verification: source and module changes committed. No Windows build, automated test suite, or GUI runtime test was executed by the assistant. The user must verify both dialogs and resizing on Windows.
