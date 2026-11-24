@@ -346,3 +346,14 @@ recover decisions, constraints, current state, and the next concrete actions.
 - Removed **Run test match**, **Cancel match**, and the standalone match execution UI flow. Tournament execution, retry behavior within tournaments, ranking, persistence, and exports remain unchanged.
 - Added `github.com/harry1453/go-common-file-dialog v1.2.0` for the Windows native picker; it supports the project's Go 1.22 baseline and does not require CGO.
 - Automated tests and the Windows GUI build have not been run in this environment. User-side verification is required for native dialogs, focus-loss validation, invalid paths, and tournament execution.
+
+
+### UI refinement commits
+
+- `7c741560d425e17d8068fa3660573ae9b554c4f0` — replace installation buttons with editable paths and remove the single-match test UI.
+- `75555c6939919cf528641a7d1cdcb931499bc356` — validate paths on submission and focus loss.
+- `d0d63dd1f0f27bf77fb38aaeec6ab12cd132e0d6` — add native Windows file and folder dialogs.
+- `ddc72a2ca34459d62a18f14d9d480c322ef89170` — retain Fyne dialogs as the non-Windows fallback.
+- `530dbefcadb3265417e98f8b571d9544c6daa2a0` — add the native file-dialog dependency.
+- `42856d03ca54c03b0c829e73cb935633c01fc753` — add dependency checksums.
+- `bb4e82d45484f1740358c2697d95c222f6882303` — document the installation and tournament UI changes.
