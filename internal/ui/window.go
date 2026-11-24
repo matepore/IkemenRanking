@@ -271,10 +271,10 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		container.NewVBox(
 			description,
 			widget.NewLabel("Ikemen GO folder"),
-			container.NewBorder(nil, nil, nil, browseFolder, installationPathEntry),
+			newPathRow(installationPathEntry, browseFolder),
 			installationPathStatus,
 			widget.NewLabel("Executable"),
-			container.NewBorder(nil, nil, nil, browseExecutable, executablePathEntry),
+			newPathRow(executablePathEntry, browseExecutable),
 			executablePathStatus,
 			status,
 		),

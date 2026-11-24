@@ -357,3 +357,13 @@ recover decisions, constraints, current state, and the next concrete actions.
 - `530dbefcadb3265417e98f8b571d9544c6daa2a0` — add the native file-dialog dependency.
 - `42856d03ca54c03b0c829e73cb935633c01fc753` — add dependency checksums.
 - `bb4e82d45484f1740358c2697d95c222f6882303` — document the installation and tournament UI changes.
+
+
+## 14. Native dialog stability and installation path layout
+
+- Run Windows native file and folder dialogs asynchronously on a dedicated OS thread locked for the complete COM lifecycle.
+- Balance the outer COM apartment initialization and the additional initialization performed by go-common-file-dialog v1.2.0. The dialog helper releases its IFileOpenDialog before the matching COM uninitialization calls.
+- Marshal dialog results and errors back to Fyne using fyne.Do.
+- Replace Border-based installation path rows with a custom flexible layout: the entry fills the available width and Browse remains immediately adjacent when the window is resized.
+- Scope is limited to native dialog lifecycle/threading and installation-path presentation; tournament, ranking, persistence, export, and Ikemen GO integration logic are unchanged.
+- Verification status: source changes committed, but Windows runtime behavior, GUI layout, Go tests, and Windows build have not been executed in this environment. Test both native dialogs before considering the crash fix runtime-confirmed.

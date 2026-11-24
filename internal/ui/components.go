@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -27,4 +28,41 @@ func (e *pathEntry) FocusLost() {
 	if e.onFocusLost != nil {
 		fyne.Do(e.onFocusLost)
 	}
+}
+
+// pathRowLayout keeps the Browse button directly beside the editable path.
+type pathRowLayout struct {
+	gap float32
+}
+
+func (l pathRowLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	if len(objects) < 2 {
+		return
+	}
+	entry, browse := objects[0], objects[1]
+	browseSize := browse.MinSize()
+	entryWidth := size.Width - browseSize.Width - l.gap
+	if entryWidth < 0 {
+		entryWidth = 0
+	}
+	entry.Resize(fyne.NewSize(entryWidth, size.Height))
+	browse.Move(fyne.NewPos(entryWidth+l.gap, 0))
+	browse.Resize(fyne.NewSize(browseSize.Width, size.Height))
+}
+
+func (l pathRowLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	if len(objects) < 2 {
+		return fyne.NewSize(0, 0)
+	}
+	entrySize, browseSize := objects[0].MinSize(), objects[1].MinSize()
+	height := entrySize.Height
+	if browseSize.Height > height {
+		height = browseSize.Height
+	}
+	return fyne.NewSize(entrySize.Width+l.gap+browseSize.Width, height)
+}
+
+// newPathRow creates a flexible row with the path field and its Browse button.
+func newPathRow(entry, browse fyne.CanvasObject) *fyne.Container {
+	return container.New(pathRowLayout{gap: 8}, entry, browse)
 }
