@@ -28,7 +28,7 @@ persistence.
 1. Discover a user's Ikemen GO installation and executable.
 2. Read available characters and stages from the installation's
    `data/select.def`.
-3. Let the user select two characters for an individual test fight.
+3. Let the user select the participants for a round-robin tournament.
 4. Run CPU-versus-CPU matches with configurable AI level, rounds to win,
    stage, and game speed.
 5. Run sequential round-robin tournaments over selected characters.
@@ -80,7 +80,6 @@ notes.
 
 ### Match and tournament execution
 
-- Individual CPU-vs-CPU match configuration.
 - Configurable AI level and rounds to win.
 - Stage selection, including a Random option.
 - Configurable game speed, with the available options adapted to the detected
@@ -285,7 +284,7 @@ over version checks when the implementation can be inspected reliably.
 When continuing this project in a new chat:
 
 1. Read this entire `PROJECT_PROGRESS.md` first.
-2. Work only on `feature/initial-gui`; do not commit to `main`.
+2. Work on the active approved feature branch; do not commit directly to `main`.
 3. Fetch the current branch head before any GitHub write. Never overwrite
    changes made since the last known commit.
 4. Inspect the current repository files before editing; this document is a
@@ -337,3 +336,13 @@ recover decisions, constraints, current state, and the next concrete actions.
   - `482bf0897579789cf85617a9ca6db9e46e9aadb8` — remove duplicate theme color entries during review.
   - `5e57bffc271f11c94be30be12426d1ba0f5a14fa` — optimize theme color lookups with a switch.
   - `70c1aebe72c52fd67b80d8e88d50e39656cd8af8` — remove duplicate title text from the header card.
+
+
+## 13. Installation paths and tournament-only workflow cleanup
+
+- Replaced installation and executable selection buttons with editable path fields, adjacent **Browse** buttons, and inline validation messages. Validation runs on Enter, on focus loss, and before a tournament starts. Invalid or empty text remains visible.
+- On Windows, Browse uses the native Windows Common Item Dialog (IFileOpenDialog) for folder and executable selection. The executable picker filters to `.exe` files. Non-Windows builds retain Fyne's picker as a fallback.
+- Moved the character count into **Character roster** and the crash-retry checkbox into **Tournament settings**.
+- Removed **Run test match**, **Cancel match**, and the standalone match execution UI flow. Tournament execution, retry behavior within tournaments, ranking, persistence, and exports remain unchanged.
+- Added `github.com/harry1453/go-common-file-dialog v1.2.0` for the Windows native picker; it supports the project's Go 1.22 baseline and does not require CGO.
+- Automated tests and the Windows GUI build have not been run in this environment. User-side verification is required for native dialogs, focus-loss validation, invalid paths, and tournament execution.
