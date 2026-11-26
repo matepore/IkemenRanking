@@ -65,3 +65,8 @@ A plain `go build` does not add that Windows executable resource.
   decisions, milestones, verification history, and continuation instructions.
 
 Tournament execution can be paused safely between fights and resumed in the same session. Cancelling a tournament preserves every result already committed to SQLite. On a later launch, running the same participant selection resumes by skipping previously completed matchups. Enable **Replay previously completed fights** to run those pairs again; each successful replay replaces its prior result.
+
+## License
+
+IkemenRanking is distributed under the MIT License. See the [LICENSE](LICENSE)
+file for the complete license text.
