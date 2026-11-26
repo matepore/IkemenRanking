@@ -384,3 +384,14 @@ recover decisions, constraints, current state, and the next concrete actions.
 - The SVG icon is embedded into the UI package and assigned to both the Fyne application and its main window, so the running application uses an icon without requiring an external file at runtime.
 - The Windows executable's Explorer/file icon is embedded by Fyne's packaging command using the supplied 256x256 PNG; a plain `go build` does not add that Windows resource.
 - README documents the Windows packaging command. Automated tests/build and visual runtime verification remain pending.
+
+
+
+## 17. Use the prepared PNG for the Fyne runtime icon
+
+- Replaced the embedded SVG runtime icon with the user-prepared `icon/icon(256x256).png` asset.
+- Copied the PNG into `internal/ui/app_icon.png` so it can be embedded with Go's `go:embed` directive without crossing the package directory boundary.
+- Both `application.SetIcon()` and `window.SetIcon()` continue to use the same `ui.AppIcon()` resource; no startup wiring changes were needed.
+- Removed the redundant copied `internal/ui/app_icon.svg`. The original SVG and all other user-provided icon assets remain in `icon/`.
+- Updated README to clarify that the prepared PNG is used for both the Fyne runtime icon and the Windows executable resource.
+- Verification: source changes committed. No Go tests/build or runtime GUI verification was performed by the assistant; the user should rebuild and confirm that the window icon now renders correctly.

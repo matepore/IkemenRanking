@@ -6,10 +6,10 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-//go:embed app_icon.svg
-var appIconSVG []byte
+//go:embed app_icon.png
+var appIconPNG []byte
 
-// AppIcon returns the embedded application icon.
+// AppIcon returns the embedded PNG application icon.
 func AppIcon() fyne.Resource {
-	return fyne.NewStaticResource("app_icon.svg", appIconSVG)
+	return fyne.NewStaticResource("app_icon.png", appIconPNG)
 }

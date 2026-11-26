@@ -49,9 +49,9 @@ go install fyne.io/fyne/v2/cmd/fyne@latest
 fyne package -os windows -icon "icon/icon(256x256).png"
 ```
 
-The SVG is embedded and assigned to both the Fyne application and window at
-runtime. The packaging command embeds the PNG into the Windows executable
-resource, which is used for the icon shown by Explorer.
+The 256x256 PNG is embedded and assigned to both the Fyne application and
+window at runtime. The same PNG is embedded into the Windows executable
+resource by the packaging command and is used for the icon shown by Explorer.
 
 ## Documentation
 
