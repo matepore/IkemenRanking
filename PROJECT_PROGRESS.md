@@ -341,11 +341,11 @@ recover decisions, constraints, current state, and the next concrete actions.
 ## 13. Installation paths and tournament-only workflow cleanup
 
 - Replaced installation and executable selection buttons with editable path fields, adjacent **Browse** buttons, and inline validation messages. Validation runs on Enter, on focus loss, and before a tournament starts. Invalid or empty text remains visible.
-- On Windows, Browse uses the native Windows Common Item Dialog (IFileOpenDialog) for folder and executable selection. The executable picker filters to `.exe` files. Non-Windows builds retain Fyne's picker as a fallback.
+- Browse uses Fyne's built-in folder and file dialogs on both Windows and non-Windows builds. The executable picker filters to `.exe` files. The earlier third-party Windows COM dialog implementation was removed after runtime crashes.
 - Moved the character count into **Character roster** and the crash-retry checkbox into **Tournament settings**.
 - Removed **Run test match**, **Cancel match**, and the standalone match execution UI flow. Tournament execution, retry behavior within tournaments, ranking, persistence, and exports remain unchanged.
-- Added `github.com/harry1453/go-common-file-dialog v1.2.0` for the Windows native picker; it supports the project's Go 1.22 baseline and does not require CGO.
-- Automated tests and the Windows GUI build have not been run in this environment. User-side verification is required for native dialogs, focus-loss validation, invalid paths, and tournament execution.
+- An initial third-party Windows COM picker was tried, but it was removed after the user reproduced crashes during IFileOpenDialog release. The final implementation deliberately uses Fyne's built-in dialogs on all platforms; no third-party COM dialog dependency remains.
+- The executable picker filters to `.exe` files.
 
 
 ### UI refinement commits
@@ -361,29 +361,27 @@ recover decisions, constraints, current state, and the next concrete actions.
 
 ## 14. Native dialog stability and installation path layout
 
-- Run Windows native file and folder dialogs asynchronously on a dedicated OS thread locked for the complete COM lifecycle.
-- Balance the outer COM apartment initialization and the additional initialization performed by go-common-file-dialog v1.2.0. The dialog helper releases its IFileOpenDialog before the matching COM uninitialization calls.
-- Marshal dialog results and errors back to Fyne using fyne.Do.
-- Replace Border-based installation path rows with a custom flexible layout: the entry fills the available width and Browse remains immediately adjacent when the window is resized.
-- Scope is limited to native dialog lifecycle/threading and installation-path presentation; tournament, ranking, persistence, export, and Ikemen GO integration logic are unchanged.
-- Verification status: source changes committed, but Windows runtime behavior, GUI layout, Go tests, and Windows build have not been executed in this environment. Test both native dialogs before considering the crash fix runtime-confirmed.
+- The initial COM-based Windows picker implementation was removed after the user reproduced crashes in the third-party dialog library during IFileOpenDialog release.
+- The final Windows implementation uses Fyne's built-in folder/file dialogs, matching the non-Windows implementation. The executable picker keeps its `.exe` extension filter.
+- Installation path rows use a custom flexible layout: the entry fills the available width and Browse remains immediately adjacent, with the entry capped at 560 Fyne units.
+- The user subsequently tested the Windows Browse workflow as part of the application verification.
 
 
 ## 15. Replace unstable Windows COM picker and constrain Browse row width
 
-- The user confirmed that the previous change did not fix either reported issue. The latest crash still occurs in go-common-file-dialog v1.2.0 while releasing IFileOpenDialog, including the executable picker.
-- Removed go-common-file-dialog and its now-unused go-ole dependency from the Windows UI path and module manifests.
-- Windows now uses Fyne's built-in folder/file dialogs, matching the existing non-Windows fallback. This prioritizes stability over the third-party native COM appearance; the executable picker retains its .exe filter.
+- The user reproduced a crash in go-common-file-dialog v1.2.0 while releasing IFileOpenDialog, including in the executable picker.
+- Removed the third-party dialog implementation and its dependencies from the Windows UI path and module manifests.
+- Windows now uses Fyne's built-in folder/file dialogs, matching the non-Windows fallback; the executable picker retains its `.exe` filter.
 - Constrained the path entry to a maximum width of 560 Fyne units. Browse remains immediately after the field rather than being pushed toward the far right on wide windows.
-- Verification: source and module changes committed. No Windows build, automated test suite, or GUI runtime test was executed by the assistant. The user must verify both dialogs and resizing on Windows.
+- This is the final dialog implementation; references in earlier history to the native COM picker describe a superseded attempt.
 
 
 ## 16. Application icon integration
 
 - The user-provided icon assets remain in the repository's `icon/` folder.
-- The SVG icon is embedded into the UI package and assigned to both the Fyne application and its main window, so the running application uses an icon without requiring an external file at runtime.
-- The Windows executable's Explorer/file icon is embedded by Fyne's packaging command using the supplied 256x256 PNG; a plain `go build` does not add that Windows resource.
-- README documents the Windows packaging command. Automated tests/build and visual runtime verification remain pending.
+- The prepared 256x256 PNG is embedded in `internal/ui/app_icon.png` and assigned to both the Fyne application and its main window, so runtime icon rendering does not depend on an external file.
+- The same PNG is supplied to Fyne packaging for the Windows executable's Explorer/file icon; a plain `go build` does not add that Windows resource.
+- README documents the current Fyne CLI installation and the required working directory for packaging.
 
 
 
@@ -394,4 +392,14 @@ recover decisions, constraints, current state, and the next concrete actions.
 - Both `application.SetIcon()` and `window.SetIcon()` continue to use the same `ui.AppIcon()` resource; no startup wiring changes were needed.
 - Removed the redundant copied `internal/ui/app_icon.svg`. The original SVG and all other user-provided icon assets remain in `icon/`.
 - Updated README to clarify that the prepared PNG is used for both the Fyne runtime icon and the Windows executable resource.
-- Verification: source changes committed. No Go tests/build or runtime GUI verification was performed by the assistant; the user should rebuild and confirm that the window icon now renders correctly.
+- User verification: the Windows Fyne packaging command completed after running it from `cmd/ikemen-ranking`, and the user confirmed that the runtime window icon now renders correctly.
+- Automated Go tests have not yet been reported for the final branch state.
+
+
+## 18. Merge preparation audit
+
+- Compared `feature/graphite-theme` with `main`: the feature branch is 29 commits ahead and 0 commits behind; the merge base is the current `main` head.
+- The existing pull request is [PR #2](https://github.com/matepore/IkemenRanking/pull/2). Its scope and verification notes are being aligned with the final implementation; it remains a draft until the automated Go test suite is confirmed.
+- Corrected README statements that still described the removed single-match test UI and the superseded Fyne CLI/package invocation.
+- Corrected the dialog history to describe the final Fyne picker implementation rather than the abandoned COM picker.
+- Windows packaging and runtime icon appearance were confirmed by the user. The final `go test ./...` result is still pending; do not mark the PR ready to merge until it is reported.

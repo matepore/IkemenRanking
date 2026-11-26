@@ -9,11 +9,12 @@ The application stores completed fight results in a local SQLite database under 
 
 The application provides a Fyne desktop window to select an Ikemen GO
 installation and executable, read characters and stages from `data/select.def`,
-choose participants, run an individual test match, and execute a round-robin
-CPU-vs-CPU tournament with one fight per unique pair. Tournament progress and
-standings are displayed in the UI. Each tournament exports a standalone dark
-HTML report plus separate fight-results and standings CSV files to a
-`results` directory beside the IkemenRanking executable.
+choose participants, and execute a round-robin CPU-vs-CPU tournament with one
+fight per unique pair. Tournament progress and standings are displayed in the
+UI. Each tournament exports a standalone dark HTML report plus separate
+fight-results and standings CSV files to a `results` directory beside the
+IkemenRanking executable. Installation paths can be entered directly or
+selected with **Browse**; invalid paths are reported inline.
 
 ## Development prerequisites
 
@@ -41,17 +42,20 @@ Build an executable (without the Windows file-resource icon):
 go build -o bin/ikemen-ranking.exe ./cmd/ikemen-ranking
 ```
 
-For the Windows executable file icon, install the Fyne CLI and package from the
-repository root:
+For the Windows executable file icon, install the current Fyne CLI and run the
+packaging command from the application entry-point directory:
 
-```sh
-go install fyne.io/fyne/v2/cmd/fyne@latest
-fyne package -os windows -icon "icon/icon(256x256).png"
+```powershell
+go install fyne.io/tools/cmd/fyne@latest
+Push-Location .\cmd\ikemen-ranking
+fyne package -os windows -icon "..\..\icon\icon(256x256).png"
+Pop-Location
 ```
 
 The 256x256 PNG is embedded and assigned to both the Fyne application and
 window at runtime. The same PNG is embedded into the Windows executable
 resource by the packaging command and is used for the icon shown by Explorer.
+A plain `go build` does not add that Windows executable resource.
 
 ## Documentation
 
