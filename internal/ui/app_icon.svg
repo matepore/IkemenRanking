@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 256 256">
+  <defs>
+    <style>
+      .cls-1{fill:url(#linear-gradient-1);stroke:#c8c8c8;stroke-width:3;stroke-miterlimit:10}
+      .cls-2{fill:#ededed}
+      .cls-3{font-family:&apos;Trebuchet MS&apos;, sans-serif;font-size:170.994px;fill:#ededed}
+    </style>
+    <filter id="filter-1" filterUnits="userSpaceOnUse" x="-11.56" y="-11.56" width="279.12" height="279.12" data-vc-blend="multiply" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="2.5"/><feOffset dx="2" dy="4" result="shadow"/><feFlood flood-color="#000000" flood-opacity="0.75"/><feComposite in2="shadow" operator="in" result="paint"/><feMerge><feMergeNode in="paint"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="filter-2" filterUnits="userSpaceOnUse" x="-11.56" y="-11.56" width="279.12" height="279.12" data-vc-blend="screen" color-interpolation-filters="sRGB"><feComponentTransfer in="SourceAlpha"><feFuncA type="linear" slope="255"/></feComponentTransfer><feMorphology operator="dilate" radius="0.06"/><feGaussianBlur stdDeviation="1.5" result="glow"/><feFlood flood-color="#ffffff" flood-opacity="0.78"/><feComposite in2="glow" operator="in" result="paint"/><feMerge><feMergeNode in="paint"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="filter-3" filterUnits="userSpaceOnUse" x="-11.56" y="-11.56" width="279.12" height="279.12" data-vc-blend="darken" color-interpolation-filters="sRGB"><feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer><feGaussianBlur stdDeviation="2.5" result="glow"/><feFlood flood-color="#000000" flood-opacity="0.78"/><feComposite in2="glow" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="paint"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="paint"/></feMerge></filter>
+    <linearGradient id="linear-gradient-1" x1="44.581" y1="44.037" x2="216.683" y2="211.312" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f9a685"/>
+      <stop offset="0.4734" stop-color="#ff4343"/>
+      <stop offset="0.9929" stop-color="#9b0000"/>
+    </linearGradient>
+    <filter id="filter-4" filterUnits="userSpaceOnUse" x="15.573" y="8.765" width="118.028" height="222.471" data-vc-blend="multiply" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="6"/><feOffset dx="17" dy="9" result="shadow"/><feFlood flood-color="#282020" flood-opacity="0.75"/><feComposite in2="shadow" operator="in" result="paint"/><feMerge><feMergeNode in="paint"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="filter-5" filterUnits="userSpaceOnUse" x="68.783" y="-14.639" width="251.644" height="285.279" data-vc-blend="multiply" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="6"/><feOffset dx="17" dy="9" result="shadow"/><feFlood flood-color="#282020" flood-opacity="0.75"/><feComposite in2="shadow" operator="in" result="paint"/><feMerge><feMergeNode in="paint"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <title>Artboard 1</title>
+  <g id="Layer_1" data-name="Layer 1">
+    <g filter="url(#filter-1)">
+      <g filter="url(#filter-2)">
+        <g filter="url(#filter-3)">
+          <circle cx="128" cy="128" r="120" class="cls-1"/>
+        </g>
+      </g>
+    </g>
+  </g>
+  <g id="Layer_2" data-name="Layer 2">
+    <g filter="url(#filter-4)">
+      <g>
+        <polygon points="57.802,132.546 79.718,134.464 74.489,194.235 52.573,192.318" class="cls-2"/>
+        <polygon points="72.993,74.646 94.91,76.564 89.68,136.335 67.764,134.418" class="cls-2"/>
+        <path d="M74.642 55.807 C75.171 49.755 80.506 45.278 86.558 45.807 C92.61 46.337 97.087 51.672 96.558 57.724 C96.028 63.776 90.693 68.253 84.641 67.723 C78.589 67.194 74.112 61.859 74.642 55.807 Z" class="cls-2"/>
+      </g>
+    </g>
+    <g filter="url(#filter-5)">
+      <text transform="matrix(0.997 0.087 -0.087 0.991 173.833 0.195)" x="-48.611" y="187.201" xml:space="preserve" class="cls-3"><tspan x="-48.611" y="187.201">R</tspan></text>
+    </g>
+  </g>
+</svg>

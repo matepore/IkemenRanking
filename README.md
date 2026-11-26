@@ -35,11 +35,23 @@ go mod tidy
 go run ./cmd/ikemen-ranking
 ```
 
-Build an executable:
+Build an executable (without the Windows file-resource icon):
 
 ```sh
-go build -o bin/ikemen-ranking ./cmd/ikemen-ranking
+go build -o bin/ikemen-ranking.exe ./cmd/ikemen-ranking
 ```
+
+For the Windows executable file icon, install the Fyne CLI and package from the
+repository root:
+
+```sh
+go install fyne.io/fyne/v2/cmd/fyne@latest
+fyne package -os windows -icon "icon/icon(256x256).png"
+```
+
+The SVG is embedded and assigned to both the Fyne application and window at
+runtime. The packaging command embeds the PNG into the Windows executable
+resource, which is used for the icon shown by Explorer.
 
 ## Documentation
 

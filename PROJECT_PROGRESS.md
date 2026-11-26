@@ -376,3 +376,11 @@ recover decisions, constraints, current state, and the next concrete actions.
 - Windows now uses Fyne's built-in folder/file dialogs, matching the existing non-Windows fallback. This prioritizes stability over the third-party native COM appearance; the executable picker retains its .exe filter.
 - Constrained the path entry to a maximum width of 560 Fyne units. Browse remains immediately after the field rather than being pushed toward the far right on wide windows.
 - Verification: source and module changes committed. No Windows build, automated test suite, or GUI runtime test was executed by the assistant. The user must verify both dialogs and resizing on Windows.
+
+
+## 16. Application icon integration
+
+- The user-provided icon assets remain in the repository's `icon/` folder.
+- The SVG icon is embedded into the UI package and assigned to both the Fyne application and its main window, so the running application uses an icon without requiring an external file at runtime.
+- The Windows executable's Explorer/file icon is embedded by Fyne's packaging command using the supplied 256x256 PNG; a plain `go build` does not add that Windows resource.
+- README documents the Windows packaging command. Automated tests/build and visual runtime verification remain pending.
