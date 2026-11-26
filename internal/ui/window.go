@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	pathpkg "path"
 	"sort"
@@ -27,16 +28,13 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	window := application.NewWindow("IkemenRanking")
 	window.Resize(fyne.NewSize(1000, 760))
 
-	title := widget.NewLabelWithStyle(
-		"IkemenRanking",
-		fyne.TextAlignLeading,
-		fyne.TextStyle{Bold: true},
-	)
 	description := widget.NewLabel(
 		"Automate CPU-vs-CPU fights in Ikemen GO and generate character rankings.",
 	)
-	installationPathLabel := widget.NewLabel("Installation: no folder selected.")
-	executablePathLabel := widget.NewLabel("Executable: no file selected.")
+	installationPathEntry := newPathEntry("Path to Ikemen GO folder")
+	executablePathEntry := newPathEntry("Path to Ikemen GO executable")
+	installationPathStatus := widget.NewLabel("No installation folder selected.")
+	executablePathStatus := widget.NewLabel("No executable selected.")
 	characterCount := widget.NewLabel("Characters found: 0")
 	selectedCount := widget.NewLabel("Selected characters: 0")
 	totalFights := widget.NewLabel("Total fights: 0")
@@ -47,10 +45,8 @@ func NewMainWindow(application fyne.App) fyne.Window {
 
 	var installationDir string
 	var executablePath string
-	var matchCancel context.CancelFunc
 	var tournamentCancel context.CancelFunc
 	var tournamentPause *tournament.PauseController
-	matchRunning := false
 	tournamentRunning := false
 
 	characters := make([]string, 0)
@@ -124,15 +120,15 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		},
 	)
 
-	loadInstallation := func(path string) {
+	loadInstallation := func(path string) error {
 		loaded, err := ikemen.LoadCharacters(path)
 		if err != nil {
-			status.SetText("Could not load the installation.")
-			dialog.ShowError(err, window)
-			return
+			return err
 		}
 
 		installationDir = path
+		installationPathStatus.SetText("✓ Valid Ikemen GO folder.")
+		installationPathEntry.SetText(path)
 		gameSpeedModeDetected = false
 		gameSpeed.Disable()
 		gameSpeedInfo.SetText("Detecting Ikemen GO game speed system...")
@@ -142,7 +138,8 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			gameSpeedInfo.SetText("Game speed system: detection failed.")
 		}
 		executablePath = ""
-		executablePathLabel.SetText("Executable: no file selected.")
+		executablePathEntry.SetText("")
+		executablePathStatus.SetText("No executable selected.")
 		characters = loaded
 		stages, stagesErr := ikemen.LoadStages(path)
 		stageOptions := []string{ikemen.RandomStage}
@@ -169,7 +166,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		stage.Options = stageOptions
 		stage.SetSelected(ikemen.RandomStage)
 		selected = make(map[string]bool)
-		installationPathLabel.SetText(fmt.Sprintf("Installation: %s", path))
 		characterCount.SetText(fmt.Sprintf("Characters found: %d", len(characters)))
 		updateSelectedCount()
 
@@ -182,6 +178,7 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			status.SetText(fmt.Sprintf("Loaded %d characters and %d stages. Select the tournament participants.", len(characters), len(stages)))
 		}
 		characterList.Refresh()
+		return nil
 	}
 
 	selectAll := widget.NewButton("Select all", func() {
@@ -198,159 +195,98 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		characterList.Refresh()
 	})
 
-	selectFolder := widget.NewButton("Select Ikemen GO folder", func() {
-		folderDialog := dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
-			if err != nil {
-				dialog.ShowError(err, window)
-				return
-			}
-			if uri == nil {
-				return
-			}
-			loadInstallation(uri.Path())
-		}, window)
-		folderDialog.Show()
-	})
+	clearInvalidInstallation := func(message string) {
+		installationDir = ""
+		gameSpeedModeDetected = false
+		gameSpeed.Disable()
+		gameSpeedInfo.SetText("Game speed system: select an Ikemen GO installation to detect compatibility.")
+		characters = nil
+		selected = make(map[string]bool)
+		characterCount.SetText("Characters found: 0")
+		stage.Options = []string{ikemen.RandomStage}
+		stagePaths = map[string]string{ikemen.RandomStage: ikemen.RandomStage}
+		stage.SetSelected(ikemen.RandomStage)
+		updateSelectedCount()
+		characterList.Refresh()
+		installationPathStatus.SetText(message)
+	}
 
-	selectExecutable := widget.NewButton("Select executable", func() {
-		fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-			if err != nil {
-				dialog.ShowError(err, window)
-				return
-			}
-			if reader == nil {
-				return
-			}
-			path := reader.URI().Path()
-			if closeErr := reader.Close(); closeErr != nil {
-				dialog.ShowError(closeErr, window)
-				return
-			}
-			executablePath = path
-			executablePathLabel.SetText(fmt.Sprintf("Executable: %s", path))
-			status.SetText("Executable selected. Select at least two participants to run a test match.")
-		}, window)
-		fileDialog.Show()
+	validateInstallationPath := func() {
+		path := strings.TrimSpace(installationPathEntry.Text)
+		if path == "" {
+			clearInvalidInstallation("⚠ Invalid folder path. Enter an Ikemen GO installation folder.")
+			return
+		}
+		info, err := os.Stat(path)
+		if err != nil || !info.IsDir() {
+			clearInvalidInstallation("⚠ Invalid folder path. The folder does not exist or is not accessible.")
+			return
+		}
+		if installationDir != "" && filepath.Clean(path) == filepath.Clean(installationDir) {
+			installationPathStatus.SetText("✓ Valid Ikemen GO folder.")
+			return
+		}
+		if err := loadInstallation(path); err != nil {
+			clearInvalidInstallation("⚠ Invalid Ikemen GO folder: " + err.Error())
+			status.SetText("Could not load the selected Ikemen GO installation.")
+		}
+	}
+
+	validateExecutablePath := func() {
+		path := strings.TrimSpace(executablePathEntry.Text)
+		info, err := os.Stat(path)
+		if path == "" || err != nil || !info.Mode().IsRegular() || !strings.EqualFold(filepath.Ext(path), ".exe") {
+			executablePath = ""
+			executablePathStatus.SetText("⚠ Invalid executable path. Select an existing .exe file.")
+			return
+		}
+		executablePath = path
+		executablePathStatus.SetText("✓ Valid executable.")
+	}
+
+	installationPathEntry.OnSubmitted = func(string) { validateInstallationPath() }
+	installationPathEntry.onFocusLost = validateInstallationPath
+	executablePathEntry.OnSubmitted = func(string) { validateExecutablePath() }
+	executablePathEntry.onFocusLost = validateExecutablePath
+
+	browseFolder := widget.NewButton("Browse", func() {
+		showFolderPicker(window, installationPathEntry.Text, func(path string) {
+			installationPathEntry.SetText(path)
+			validateInstallationPath()
+		}, func(err error) { dialog.ShowError(err, window) })
+	})
+	browseExecutable := widget.NewButton("Browse", func() {
+		showExecutablePicker(window, executablePathEntry.Text, func(path string) {
+			executablePathEntry.SetText(path)
+			validateExecutablePath()
+		}, func(err error) { dialog.ShowError(err, window) })
 	})
 
 	selectionControls := container.NewHBox(selectAll, deselectAll, selectedCount)
-	tournamentControls := container.NewVBox(totalFights, replayPreviouslyCompleted)
+	tournamentControls := container.NewVBox(totalFights, replayPreviouslyCompleted, retryCrashes)
 
-	runMatchButton := widget.NewButton("Run test match", nil)
-	cancelMatchButton := widget.NewButton("Cancel match", func() {
-		if matchCancel != nil {
-			matchCancel()
-			status.SetText("Cancelling match...")
-		}
-	})
-	cancelMatchButton.Hide()
-
-	runMatchButton.OnTapped = func() {
-		if matchRunning || tournamentRunning {
-			return
-		}
-		if installationDir == "" {
-			dialog.ShowInformation("Installation required", "Select the root folder of your Ikemen GO installation first.", window)
-			return
-		}
-		if executablePath == "" {
-			dialog.ShowInformation("Executable required", "Select the Ikemen GO executable you want to run.", window)
-			return
-		}
-		if !gameSpeedModeDetected {
-			dialog.ShowInformation("Unsupported Ikemen GO version", "IkemenRanking could not identify this installation's -speed implementation. Make sure you selected the root folder of the Ikemen GO installation.", window)
-			return
-		}
-		participants := make([]string, 0, 2)
-		for _, character := range characters {
-			if selected[character] {
-				participants = append(participants, character)
-				if len(participants) == 2 {
-					break
-				}
-			}
-		}
-		if len(participants) < 2 {
-			dialog.ShowInformation("Participants required", "Select at least two participants for the test match.", window)
-			return
-		}
-		ai, err := strconv.Atoi(strings.TrimSpace(aiLevel.Text))
-		if err != nil || ai < 1 {
-			dialog.ShowInformation("Invalid AI level", "AI level must be a whole number greater than 0.", window)
-			return
-		}
-		rounds, err := strconv.Atoi(strings.TrimSpace(roundsToWin.Text))
-		if err != nil || rounds < 1 {
-			dialog.ShowInformation("Invalid rounds", "Rounds to win must be a whole number greater than 0.", window)
-			return
-		}
-
-		config := ikemen.MatchConfig{
-			InstallationDir: installationDir,
-			ExecutablePath:  executablePath,
-			Player1:         participants[0],
-			Player2:         participants[1],
-			AILevel:         ai,
-			RoundsToWin:     rounds,
-			Stage:           stagePaths[stage.Selected],
-			GameSpeed:       gameSpeedValues[gameSpeed.Selected],
-			GameSpeedMode:   gameSpeedMode,
-			RetryOnCrash:    retryCrashes.Checked,
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-		matchCancel = cancel
-		matchRunning = true
-		runMatchButton.Disable()
-		cancelMatchButton.Show()
-		status.SetText(fmt.Sprintf("Running test match: %s vs %s...", config.Player1, config.Player2))
-
-		go func() {
-			result, runErr := ikemen.RunMatch(ctx, config)
-			fyne.Do(func() {
-				defer cancel()
-				matchCancel = nil
-				matchRunning = false
-				runMatchButton.Enable()
-				cancelMatchButton.Hide()
-
-				if runErr != nil {
-					status.SetText("Test match failed.")
-					dialog.ShowError(runErr, window)
-					return
-				}
-
-				if result.IsDraw {
-					status.SetText(fmt.Sprintf(
-						"Test match finished: Draw. %s %d - %d %s (draws: %d).",
-						config.Player1, result.Player1Wins, result.Player2Wins,
-						config.Player2, result.Draws,
-					))
-					return
-				}
-				status.SetText(fmt.Sprintf(
-					"Test match finished: %s won. %s %d - %d %s (draws: %d).",
-					result.Winner, config.Player1, result.Player1Wins,
-					result.Player2Wins, config.Player2, result.Draws,
-				))
-			})
-		}()
-	}
-
-	header := container.NewVBox(
-		title,
-		widget.NewSeparator(),
-		description,
-		container.NewHBox(selectFolder, selectExecutable),
-		installationPathLabel,
-		executablePathLabel,
-		characterCount,
-		status,
-		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Select the characters that will participate", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+	header := newSectionCard(
+		"IkemenRanking",
+		"CPU-vs-CPU tournament manager",
+		container.NewVBox(
+			description,
+			widget.NewLabel("Ikemen GO folder"),
+			newPathRow(installationPathEntry, browseFolder),
+			installationPathStatus,
+			widget.NewLabel("Executable"),
+			newPathRow(executablePathEntry, browseExecutable),
+			executablePathStatus,
+			status,
+		),
+	)
+	selectionPanel := newSectionCard(
+		"Character selection",
+		"Choose the participants for the round-robin tournament",
 		selectionControls,
-		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Tournament settings", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+	)
+	tournamentSettingsPanel := newSectionCard(
+		"Tournament settings",
+		"Current selection overview",
 		tournamentControls,
 	)
 	tournamentRunButton := widget.NewButton("Run tournament", nil)
@@ -385,9 +321,11 @@ func NewMainWindow(application fyne.App) fyne.Window {
 	resumeTournamentButton.Disable()
 
 	tournamentRunButton.OnTapped = func() {
-		if matchRunning || tournamentRunning {
+		if tournamentRunning {
 			return
 		}
+		validateInstallationPath()
+		validateExecutablePath()
 		if installationDir == "" {
 			dialog.ShowInformation("Installation required", "Select the root folder of your Ikemen GO installation first.", window)
 			return
@@ -457,7 +395,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		tournamentPause = pauseController
 		tournamentRunning = true
 		tournamentRunButton.Disable()
-		runMatchButton.Disable()
 		cancelTournamentButton.Show()
 		pauseTournamentButton.Show()
 		resumeTournamentButton.Hide()
@@ -505,7 +442,6 @@ func NewMainWindow(application fyne.App) fyne.Window {
 				tournamentPause = nil
 				tournamentRunning = false
 				tournamentRunButton.Enable()
-				runMatchButton.Enable()
 				cancelTournamentButton.Hide()
 				pauseTournamentButton.Hide()
 				resumeTournamentButton.Hide()
@@ -553,10 +489,10 @@ func NewMainWindow(application fyne.App) fyne.Window {
 		}()
 	}
 
-	matchPanel := container.NewVBox(
-		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Match settings and single-match test", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		widget.NewLabel("The first two selected participants (in select.def order) will be used."),
+	matchPanel := newSectionCard(
+		"Match configuration",
+		"Configure the fights played during the tournament",
+		container.NewVBox(
 		widget.NewLabel("Choose Random to select a stage at random."),
 		container.NewGridWithColumns(4,
 			container.NewVBox(widget.NewLabel("AI level"), aiLevel),
@@ -565,24 +501,34 @@ func NewMainWindow(application fyne.App) fyne.Window {
 			container.NewVBox(widget.NewLabel("Game speed"), gameSpeed),
 		),
 		gameSpeedInfo,
-		retryCrashes,
 		widget.NewLabel("Only normal and faster speeds are available. Options depend on the detected Ikemen GO version."),
-		container.NewHBox(runMatchButton, cancelMatchButton),
+		),
 	)
 
-	tournamentPanel := container.NewVBox(
-		widget.NewSeparator(),
-		widget.NewLabelWithStyle("Tournament execution", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+	tournamentPanel := newSectionCard(
+		"Tournament execution",
+		"Track progress, pause or cancel the current run",
+		container.NewVBox(
 		tournamentProgressLabel,
 		tournamentProgress,
 		container.NewHBox(tournamentRunButton, pauseTournamentButton, resumeTournamentButton, cancelTournamentButton),
 		rankingSummary,
+		),
 	)
-	characterListArea := container.NewGridWrap(fyne.NewSize(1000, 360), characterList)
+	characterListArea := newSectionCard(
+		"Character roster",
+		"Select characters from the loaded Ikemen GO installation",
+		container.NewVBox(
+			characterCount,
+			container.NewGridWrap(fyne.NewSize(1000, 360), characterList),
+		),
+	)
 	pageContent := container.NewVBox(
 		header,
+		selectionPanel,
 		characterListArea,
 		matchPanel,
+		tournamentSettingsPanel,
 		tournamentPanel,
 	)
 	window.SetContent(container.NewVScroll(pageContent))

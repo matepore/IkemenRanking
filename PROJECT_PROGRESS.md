@@ -17,7 +17,7 @@ application uses Fyne for its desktop UI and a pure-Go SQLite driver for
 persistence.
 
 - Repository: https://github.com/matepore/IkemenRanking
-- Active development branch: `feature/initial-gui`
+- Default integration branch: `main`
 - Main language: Go (module targets Go 1.22)
 - UI language: English
 - Primary development environment: Windows / PowerShell
@@ -28,7 +28,7 @@ persistence.
 1. Discover a user's Ikemen GO installation and executable.
 2. Read available characters and stages from the installation's
    `data/select.def`.
-3. Let the user select two characters for an individual test fight.
+3. Let the user select the participants for a round-robin tournament.
 4. Run CPU-versus-CPU matches with configurable AI level, rounds to win,
    stage, and game speed.
 5. Run sequential round-robin tournaments over selected characters.
@@ -80,7 +80,6 @@ notes.
 
 ### Match and tournament execution
 
-- Individual CPU-vs-CPU match configuration.
 - Configurable AI level and rounds to win.
 - Stage selection, including a Random option.
 - Configurable game speed, with the available options adapted to the detected
@@ -285,7 +284,7 @@ over version checks when the implementation can be inspected reliably.
 When continuing this project in a new chat:
 
 1. Read this entire `PROJECT_PROGRESS.md` first.
-2. Work only on `feature/initial-gui`; do not commit to `main`.
+2. Work on the active approved feature branch; do not commit directly to `main`.
 3. Fetch the current branch head before any GitHub write. Never overwrite
    changes made since the last known commit.
 4. Inspect the current repository files before editing; this document is a
@@ -316,3 +315,91 @@ recover decisions, constraints, current state, and the next concrete actions.
 - Actual user-provided Nightly output uses capitalized `Draws` and `Wins` keys. The previous parser's case-sensitive lowercase patterns missed the `Wins` table and incorrectly fell back to the legacy `p1wins` error.
 - Updated key matching to be case-insensitive and added a regression test with the real capitalization, `Wins[1] = 2`, `Wins[2] = 0`, and nested round score data.
 - Expected parsed result for the supplied log: P1 wins 2, P2 wins 0, draws 0.
+
+
+## 12. Graphite & Crimson UI refresh
+
+- Approved visual direction: Graphite & Crimson, balanced crimson accent.
+- Implementation branch: `feature/graphite-theme`, created from `main` at `7e1d703062fcaee104988e3790a93c886166aa03`.
+- Added a custom Fyne theme with graphite backgrounds, muted text, crimson primary/focus states, and semantic success/warning/error colors.
+- Added a reusable section-card helper and grouped the main window into distinct installation, character-selection, character-roster, match-configuration, tournament-settings, and tournament-execution panels.
+- Applied the custom theme at application startup. The existing vertically scrollable single-window workflow is retained.
+- No tournament, ranking, persistence, export, or Ikemen GO integration logic was intentionally changed.
+- Draft review: [PR #2](https://github.com/matepore/IkemenRanking/pull/2).
+- Automated tests and Windows GUI build have **not** been run by the assistant in this environment. User-side visual verification is still required, particularly for card spacing, scroll behavior, and long character lists.
+- Commits on this branch:
+  - `b3cbb775cc3639a00480f33bef53d57fd3fcfb2f` — add Graphite & Crimson theme.
+  - `711b97dbe2009c62094bf04d05ae5f1918780ddc` — add reusable section cards.
+  - `10d3769fd51c98ac384dbfb33ed71ae664235d98` — apply theme at startup.
+  - `b7c89004d57d3de264f5fc6810c7d566e8b4504c` — reorganize main window into section panels.
+  - `f742e32c8a62335fe495575a3a4a7a9adafea416` — refine subtle hover and focus states.
+  - `482bf0897579789cf85617a9ca6db9e46e9aadb8` — remove duplicate theme color entries during review.
+  - `5e57bffc271f11c94be30be12426d1ba0f5a14fa` — optimize theme color lookups with a switch.
+  - `70c1aebe72c52fd67b80d8e88d50e39656cd8af8` — remove duplicate title text from the header card.
+
+
+## 13. Installation paths and tournament-only workflow cleanup
+
+- Replaced installation and executable selection buttons with editable path fields, adjacent **Browse** buttons, and inline validation messages. Validation runs on Enter, on focus loss, and before a tournament starts. Invalid or empty text remains visible.
+- Browse uses Fyne's built-in folder and file dialogs on both Windows and non-Windows builds. The executable picker filters to `.exe` files. The earlier third-party Windows COM dialog implementation was removed after runtime crashes.
+- Moved the character count into **Character roster** and the crash-retry checkbox into **Tournament settings**.
+- Removed **Run test match**, **Cancel match**, and the standalone match execution UI flow. Tournament execution, retry behavior within tournaments, ranking, persistence, and exports remain unchanged.
+- An initial third-party Windows COM picker was tried, but it was removed after the user reproduced crashes during IFileOpenDialog release. The final implementation deliberately uses Fyne's built-in dialogs on all platforms; no third-party COM dialog dependency remains.
+- The executable picker filters to `.exe` files.
+
+
+### UI refinement commits
+
+- `7c741560d425e17d8068fa3660573ae9b554c4f0` — replace installation buttons with editable paths and remove the single-match test UI.
+- `75555c6939919cf528641a7d1cdcb931499bc356` — validate paths on submission and focus loss.
+- `d0d63dd1f0f27bf77fb38aaeec6ab12cd132e0d6` — add native Windows file and folder dialogs.
+- `ddc72a2ca34459d62a18f14d9d480c322ef89170` — retain Fyne dialogs as the non-Windows fallback.
+- `530dbefcadb3265417e98f8b571d9544c6daa2a0` — add the native file-dialog dependency.
+- `42856d03ca54c03b0c829e73cb935633c01fc753` — add dependency checksums.
+- `bb4e82d45484f1740358c2697d95c222f6882303` — document the installation and tournament UI changes.
+
+
+## 14. Native dialog stability and installation path layout
+
+- The initial COM-based Windows picker implementation was removed after the user reproduced crashes in the third-party dialog library during IFileOpenDialog release.
+- The final Windows implementation uses Fyne's built-in folder/file dialogs, matching the non-Windows implementation. The executable picker keeps its `.exe` extension filter.
+- Installation path rows use a custom flexible layout: the entry fills the available width and Browse remains immediately adjacent, with the entry capped at 560 Fyne units.
+- The user subsequently tested the Windows Browse workflow as part of the application verification.
+
+
+## 15. Replace unstable Windows COM picker and constrain Browse row width
+
+- The user reproduced a crash in go-common-file-dialog v1.2.0 while releasing IFileOpenDialog, including in the executable picker.
+- Removed the third-party dialog implementation and its dependencies from the Windows UI path and module manifests.
+- Windows now uses Fyne's built-in folder/file dialogs, matching the non-Windows fallback; the executable picker retains its `.exe` filter.
+- Constrained the path entry to a maximum width of 560 Fyne units. Browse remains immediately after the field rather than being pushed toward the far right on wide windows.
+- This is the final dialog implementation; references in earlier history to the native COM picker describe a superseded attempt.
+
+
+## 16. Application icon integration
+
+- The user-provided icon assets remain in the repository's `icon/` folder.
+- The prepared 256x256 PNG is embedded in `internal/ui/app_icon.png` and assigned to both the Fyne application and its main window, so runtime icon rendering does not depend on an external file.
+- The same PNG is supplied to Fyne packaging for the Windows executable's Explorer/file icon; a plain `go build` does not add that Windows resource.
+- README documents the current Fyne CLI installation and the required working directory for packaging.
+
+
+
+## 17. Use the prepared PNG for the Fyne runtime icon
+
+- Replaced the embedded SVG runtime icon with the user-prepared `icon/icon(256x256).png` asset.
+- Copied the PNG into `internal/ui/app_icon.png` so it can be embedded with Go's `go:embed` directive without crossing the package directory boundary.
+- Both `application.SetIcon()` and `window.SetIcon()` continue to use the same `ui.AppIcon()` resource; no startup wiring changes were needed.
+- Removed the redundant copied `internal/ui/app_icon.svg`. The original SVG and all other user-provided icon assets remain in `icon/`.
+- Updated README to clarify that the prepared PNG is used for both the Fyne runtime icon and the Windows executable resource.
+- User verification: the Windows Fyne packaging command completed after running it from `cmd/ikemen-ranking`, and the user confirmed that the runtime window icon now renders correctly.
+- Automated Go tests have not yet been reported for the final branch state.
+
+
+## 18. Merge preparation audit
+
+- Compared `feature/graphite-theme` with `main`: the feature branch is 29 commits ahead and 0 commits behind; the merge base is the current `main` head.
+- The existing pull request is [PR #2](https://github.com/matepore/IkemenRanking/pull/2). Its scope and verification notes are being aligned with the final implementation; it remains a draft until the automated Go test suite is confirmed.
+- Corrected README statements that still described the removed single-match test UI and the superseded Fyne CLI/package invocation.
+- Corrected the dialog history to describe the final Fyne picker implementation rather than the abandoned COM picker.
+- Windows packaging and runtime icon appearance were confirmed by the user. The final `go test ./...` result is still pending; do not mark the PR ready to merge until it is reported.
